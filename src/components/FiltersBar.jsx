@@ -4,7 +4,7 @@ import { Search, SlidersHorizontal, TrendingUp, Clock, Sparkles } from "lucide-r
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-const FiltersBar = ({ activeFilters, onFilterChange }) => {
+const FiltersBar = ({ activeFilters, onFilterChange, searchValue, onSearchChange, sortBy, onSortChange }) => {
   const careerFilters = ["Placement", "Internship", "Research", "Startup", "Skills"];
   const skillFilters = ["AI/ML", "Robotics", "IoT", "CAD", "Finance", "Biotech", "Cybersecurity", "Web Dev"];
   const sortOptions = [
@@ -33,6 +33,8 @@ const FiltersBar = ({ activeFilters, onFilterChange }) => {
             Input,
             {
               placeholder: "Search events, workshops, internships...",
+              value: searchValue,
+              onChange: (e) => onSearchChange?.(e.target.value),
               className: "pl-12 pr-4 h-12 rounded-xl border-border focus:border-primary bg-background"
             }
           )
@@ -66,12 +68,13 @@ const FiltersBar = ({ activeFilters, onFilterChange }) => {
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 pt-4 border-t border-border", children: [
           /* @__PURE__ */ jsx("span", { className: "text-sm font-medium text-muted-foreground", children: "Sort by:" }),
-          /* @__PURE__ */ jsx("div", { className: "flex gap-2 flex-wrap", children: sortOptions.map(({ icon: Icon, label, value }) => /* @__PURE__ */ jsxs(
+          /* @__PURE__ */ jsxs("div", { className: "flex gap-2 flex-wrap", children: sortOptions.map(({ icon: Icon, label, value }) => /* @__PURE__ */ jsxs(
             Button,
             {
-              variant: "outline",
+              variant: sortBy === value ? "default" : "outline",
               size: "sm",
-              className: "rounded-xl border-border hover:border-primary hover:bg-orange-light",
+              onClick: () => onSortChange?.(value),
+              className: `rounded-xl border-border hover:border-primary hover:bg-orange-light ${sortBy === value ? "bg-primary text-primary-foreground" : ""}`,
               children: [
                 /* @__PURE__ */ jsx(Icon, { className: "w-4 h-4 mr-2" }),
                 label

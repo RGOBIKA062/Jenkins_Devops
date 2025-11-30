@@ -8,6 +8,8 @@ import { Sparkles } from "lucide-react";
 import CreateEventModal from "../components/CreateEventModal";
 const StudentFeed = () => {
   const [activeFilters, setActiveFilters] = useState([]);
+  const [searchValue, setSearchValue] = useState("");
+  const [sortBy, setSortBy] = useState("");
   const sampleEvents = [
     {
       title: "AI & Machine Learning Workshop",
@@ -124,8 +126,47 @@ const StudentFeed = () => {
           ]
         }
       ),
-      /* @__PURE__ */ jsx(FiltersBar, { activeFilters, onFilterChange: setActiveFilters }),
-      /* @__PURE__ */ jsx("div", { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6", children: sampleEvents.map((event, index) => /* @__PURE__ */ jsx(
+      /* @__PURE__ */ jsx(FiltersBar, { activeFilters, onFilterChange: setActiveFilters, searchValue, onSearchChange: setSearchValue, sortBy, onSortChange: setSortBy }),
+      /* apply filters */ /* @__PURE__ */ (() => {
+        const q = searchValue.trim().toLowerCase();
+        const matchesSearch = (event) => {
+          if (!q) return true;
+          const hay = [event.title, event.organizer, event.description, event.location, (event.tags || []).join(" ")].join(" ").toLowerCase();
+          return hay.includes(q);
+        };
+        const matchesFilters = (event) => {
+          if (!activeFilters || activeFilters.length === 0) return true;
+          const tags = (event.tags || []).map((t) => t.toLowerCase());
+          return activeFilters.some((f) => tags.includes(f.toLowerCase()) || event.title.toLowerCase().includes(f.toLowerCase()) || event.organizer.toLowerCase().includes(f.toLowerCase()));
+        };
+        const parseDate = (d) => {
+          try {
+            if (!d) return 0;
+            let s = d.split("-")[0].trim();
+            // ensure year exists
+            if (!/\d{4}/.test(s)) {
+              const yearMatch = d.match(/\d{4}/);
+              if (yearMatch) s = `${s}, ${yearMatch[0]}`;
+            }
+            const tm = Date.parse(s);
+            return isNaN(tm) ? 0 : tm;
+          } catch (e) {
+            return 0;
+          }
+        };
+        const eventsFiltered = sampleEvents.filter((ev) => matchesSearch(ev) && matchesFilters(ev));
+        const eventsSorted = eventsFiltered.sort((a, b) => {
+          if (sortBy === "trending") return (b.attendees || 0) - (a.attendees || 0);
+          if (sortBy === "deadline") return parseDate(a.date) - parseDate(b.date);
+          if (sortBy === "ai") {
+            const aIs = (a.tags || []).some((t) => /ai/i.test(t)) ? 1 : 0;
+            const bIs = (b.tags || []).some((t) => /ai/i.test(t)) ? 1 : 0;
+            if (aIs !== bIs) return bIs - aIs;
+            return (b.attendees || 0) - (a.attendees || 0);
+          }
+          return 0;
+        });
+        return /* @__PURE__ */ jsx("div", { className: "grid md:grid-cols-2 lg:grid-cols-3 gap-6", children: eventsSorted.map((event, index) => /* @__PURE__ */ jsx(
         motion.div,
         {
           initial: { opacity: 0, y: 20 },
@@ -134,7 +175,8 @@ const StudentFeed = () => {
           children: /* @__PURE__ */ jsx(EventCard, { ...event })
         },
         index
-      )) })
+        )) });
+      })(),
     ] })
   ] });
 };
