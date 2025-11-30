@@ -1,0 +1,29 @@
+import React from "react";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Landing from "./pages/Landing";
+import Auth from "./pages/Auth";
+import StudentFeed from "./pages/StudentFeed";
+import FacultyDashboard from "./pages/FacultyDashboard";
+import FreelancerDashboard from "./pages/FreelancerDashboard";
+import IndustryDashboard from "./pages/IndustryDashboard";
+import OrganizerDashboard from "./pages/OrganizerDashboard";
+import NotFound from "./pages/NotFound";
+
+function App() {
+	return (
+		<BrowserRouter>
+			<Routes>
+				<Route path="/" element={<Landing />} />
+				<Route path="/auth" element={<Auth />} />
+				<Route path="/student" element={<StudentFeed />} />
+				<Route path="/faculty" element={<FacultyDashboard />} />
+				<Route path="/freelancer" element={<FreelancerDashboard />} />
+				<Route path="/industry" element={<IndustryDashboard />} />
+				<Route path="/organizer" element={<OrganizerDashboard />} />
+				<Route path="*" element={<NotFound />} />
+			</Routes>
+		</BrowserRouter>
+	);
+}
+
+export default App;
