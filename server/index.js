@@ -20,7 +20,21 @@ const PORT = process.env.PORT || 5000;
 
 // CORS configuration
 const corsOptions = {
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowedOrigins = [
+      'http://localhost:8080',
+      'http://localhost:8081', 
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:8080',
+      'http://127.0.0.1:8081',
+    ];
+    if (!origin || allowedOrigins.includes(origin) || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -72,6 +86,10 @@ app.get('/health', (req, res) => {
  */
 
 app.use('/api/auth', authRoutes);
+
+// Event routes
+import eventRoutes from './routes/eventRoutes.js';
+app.use('/api/events', eventRoutes);
 
 /**
  * ==========================================

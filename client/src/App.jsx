@@ -7,6 +7,7 @@ import FacultyDashboard from "./pages/FacultyDashboard";
 import FreelancerDashboard from "./pages/FreelancerDashboard";
 import IndustryDashboard from "./pages/IndustryDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
+import EventDetail from "./pages/EventDetail";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
 				<Route path="/freelancer" element={<FreelancerDashboard />} />
 				<Route path="/industry" element={<IndustryDashboard />} />
 				<Route path="/organizer" element={<OrganizerDashboard />} />
+				<Route path="/event/:id" element={<EventDetail />} />
 				<Route path="*" element={<NotFound />} />
 			</Routes>
 		</BrowserRouter>
