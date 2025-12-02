@@ -3,8 +3,9 @@ import { motion } from 'framer-motion';
 import Navbar from '@/components/Navbar';
 import FiltersBar from '@/components/FiltersBar';
 import EventCard from '@/components/EventCard';
-import { Sparkles, Loader } from 'lucide-react';
+import { Sparkles, Loader, Code2, AlertCircle } from 'lucide-react';
 import CreateEventModal from '../components/CreateEventModal';
+import { useNavigate } from 'react-router-dom';
 
 const StudentFeed = () => {
   const [activeFilters, setActiveFilters] = useState([]);
@@ -13,6 +14,7 @@ const StudentFeed = () => {
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEvents();
@@ -21,45 +23,83 @@ const StudentFeed = () => {
   const fetchEvents = async () => {
     try {
       setLoading(true);
-      const response = await fetch('http://localhost:5000/api/events/all');
-      if (!response.ok) throw new Error('Failed to fetch events');
-      
-      const data = await response.json();
-      
-      // Transform API events to match EventCard format
-      const transformedEvents = (data.data?.events || []).map(event => ({
-        id: event._id,
-        title: event.title,
-        organizer: event.organizer?.organizerName || 'Unknown',
-        description: event.description,
-        date: new Date(event.startDate).toLocaleDateString('en-US', { 
-          year: 'numeric', 
-          month: 'long', 
-          day: 'numeric' 
-        }),
-        time: `${event.startTime || '00:00'} - ${event.endTime || '23:59'}`,
-        location: event.location?.type === 'Online' 
-          ? event.location?.meetingLink || 'Online'
-          : `${event.location?.address || 'TBD'}, ${event.location?.city || 'TBD'}`,
-        tags: event.tags || [],
-        imageUrl: event.bannerImage || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
-        attendees: event.registeredCount || 0,
-        totalCapacity: event.totalCapacity,
-        price: event.pricing?.amount,
-        rating: event.ratings?.overallRating || 0,
-        reviews: event.ratings?.totalRatings || 0,
-        features: event.features || {},
-        wishlistCount: event.wishlistCount || 0,
-        eventType: event.eventType,
-        skillLevel: event.skillLevel
-      }));
-      
-      setEvents(transformedEvents);
       setError(null);
-    } catch (err) {
-      console.error('Error fetching events:', err);
-      setError(err.message);
+
+      // Enhanced error handling with retry logic
+      let retries = 0;
+      const maxRetries = 3;
+      let lastError = null;
+
+      while (retries < maxRetries) {
+        try {
+          const response = await Promise.race([
+            fetch('http://localhost:5000/api/events/all'),
+            new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('Request timeout')), 10000)
+            ),
+          ]);
+
+          if (!response.ok) {
+            throw new Error(`Server error: ${response.status}`);
+          }
+
+          const data = await response.json();
+
+          if (!data?.data?.events || !Array.isArray(data.data.events)) {
+            throw new Error('Invalid response format from server');
+          }
+
+          // Transform API events to match EventCard format
+          const transformedEvents = data.data.events.map(event => ({
+            id: event._id,
+            title: event.title,
+            organizer: event.organizer?.organizerName || 'Unknown',
+            description: event.description,
+            date: new Date(event.startDate).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            }),
+            time: `${event.startTime || '00:00'} - ${event.endTime || '23:59'}`,
+            location: event.location?.type === 'Online' 
+              ? event.location?.meetingLink || 'Online'
+              : `${event.location?.address || 'TBD'}, ${event.location?.city || 'TBD'}`,
+            tags: event.tags || [],
+            imageUrl: event.bannerImage || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=800',
+            attendees: event.registeredCount || 0,
+            totalCapacity: event.totalCapacity,
+            price: event.pricing?.amount,
+            rating: event.ratings?.overallRating || 0,
+            reviews: event.ratings?.totalRatings || 0,
+            features: event.features || {},
+            wishlistCount: event.wishlistCount || 0,
+            eventType: event.eventType,
+            skillLevel: event.skillLevel
+          }));
+
+          setEvents(transformedEvents);
+          setError(null);
+          return; // Success - exit retry loop
+
+        } catch (err) {
+          lastError = err;
+          retries++;
+          if (retries < maxRetries) {
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        }
+      }
+
+      // All retries failed - use fallback
+      console.error('Failed to fetch events after retries:', lastError);
       setEvents(getFallbackEvents());
+      setError('Unable to connect to server. Showing recent events.');
+
+    } catch (err) {
+      console.error('Error in fetchEvents:', err);
+      setEvents(getFallbackEvents());
+      setError('Connection error. Showing sample events.');
     } finally {
       setLoading(false);
     }
@@ -189,6 +229,31 @@ const StudentFeed = () => {
           </div>
         </motion.div>
 
+        {/* ONLINE COMPILER - ANY CODE */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-gradient-to-r from-orange-600/10 via-orange-600/5 to-transparent border border-orange-600/20 rounded-3xl p-6 mb-8"
+        >
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+                <Code2 className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-display font-bold text-lg text-foreground">💻 Online Compiler Pro</h2>
+                <p className="text-sm text-muted-foreground">Professional IDE with auto-closing brackets & syntax highlighting</p>
+              </div>
+            </div>
+            <button
+              onClick={() => navigate('/compiler-pro')}
+              className="px-4 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white rounded-lg font-medium transition whitespace-nowrap"
+            >
+              Launch →
+            </button>
+          </div>
+        </motion.div>
+
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -231,8 +296,18 @@ const StudentFeed = () => {
         )}
 
         {error && !loading && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8 text-red-700">
-            Error loading events: {error}
+          <div className="bg-orange-50 border-l-4 border-orange-500 rounded-lg p-4 mb-8 text-orange-800 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <h3 className="font-semibold mb-1">Connection Issue</h3>
+              <p className="text-sm">{error}</p>
+              <button
+                onClick={fetchEvents}
+                className="mt-2 px-3 py-1 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded transition"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         )}
 

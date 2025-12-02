@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import StudentFeed from "./pages/StudentFeed";
+import OnlineCompilerPro from "./pages/OnlineCompilerPro";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FreelancerDashboard from "./pages/FreelancerDashboard";
 import IndustryDashboard from "./pages/IndustryDashboard";
@@ -14,10 +15,11 @@ function App() {
 	return (
 		<BrowserRouter>
 			<Routes>
-				<Route path="/" element={<Landing />} />
-				<Route path="/auth" element={<Auth />} />
-				<Route path="/student" element={<StudentFeed />} />
-				<Route path="/faculty" element={<FacultyDashboard />} />
+			<Route path="/" element={<Landing />} />
+			<Route path="/auth" element={<Auth />} />
+			<Route path="/student" element={<StudentFeed />} />
+			<Route path="/compiler-pro" element={<OnlineCompilerPro />} />
+			<Route path="/faculty" element={<FacultyDashboard />} />
 				<Route path="/freelancer" element={<FreelancerDashboard />} />
 				<Route path="/industry" element={<IndustryDashboard />} />
 				<Route path="/organizer" element={<OrganizerDashboard />} />

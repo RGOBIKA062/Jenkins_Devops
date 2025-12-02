@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middleware/auth.js';
+import codeExecutionRoutes from './routes/codeExecutionRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -90,6 +91,9 @@ app.use('/api/auth', authRoutes);
 // Event routes
 import eventRoutes from './routes/eventRoutes.js';
 app.use('/api/events', eventRoutes);
+
+// Code Execution API (Production Grade)
+app.use('/api/execute', codeExecutionRoutes);
 
 /**
  * ==========================================
