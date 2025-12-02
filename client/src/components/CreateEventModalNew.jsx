@@ -113,7 +113,7 @@ const CreateEventModal = () => {
 
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       
       const payload = {
         ...values,

@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
+import { useUserManager } from "@/hooks/useUserManager";
+import { useNavigate } from "react-router-dom";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -15,6 +17,7 @@ import {
   DropdownMenuLabel
 } from "@/components/ui/dropdown-menu";
 const EventCard = ({
+  id,
   title,
   organizer,
   description,
@@ -23,9 +26,20 @@ const EventCard = ({
   location,
   tags,
   imageUrl,
-  attendees = 0
+  attendees = 0,
+  registrationUrl
 }) => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const userManager = useUserManager();
+  
+  // Load initial state from persistent storage
+  const [bookmarked, setBookmarked] = React.useState(() => 
+    id ? userManager.isInWishlist(id) : false
+  );
+  const [isReminderSet, setIsReminderSet] = React.useState(() =>
+    id ? userManager.hasReminder(id) : false
+  );
 
   const shareFor = React.useCallback((type) => {
     try {
@@ -87,71 +101,124 @@ const EventCard = ({
       console.error("Share failed", e);
     }
   }, [title, date, time, location, organizer]);
-  const [bookmarked, setBookmarked] = React.useState(false);
-  const toggleBookmark = React.useCallback((e) => {
+
+  const handleBookmark = React.useCallback((e) => {
     e.stopPropagation();
-    setBookmarked((v) => !v);
-    // TODO: persist to backend (Supabase) or localStorage later
-  }, []);
+    const newState = !bookmarked;
+    setBookmarked(newState);
+    
+    if (id) {
+      if (newState) {
+        userManager.addToWishlist(id, { title, organizer, date, time, location, imageUrl });
+      } else {
+        userManager.removeFromWishlist(id);
+      }
+    }
+    
+    toast({
+      description: newState ? "Added to wishlist" : "Removed from wishlist",
+      className: newState ? "bg-green-50" : "bg-red-50"
+    });
+  }, [bookmarked, toast, id, userManager, title, organizer, date, time, location, imageUrl]);
+
+  const handleReminder = React.useCallback((e) => {
+    e.stopPropagation();
+    const newState = !isReminderSet;
+    setIsReminderSet(newState);
+    
+    if (id) {
+      if (newState) {
+        userManager.addReminder(id, { title, date, time, location });
+      } else {
+        userManager.removeReminder(id);
+      }
+    }
+    
+    toast({
+      description: newState ? "Reminder set for this event" : "Reminder removed",
+      className: newState ? "bg-blue-50" : "bg-slate-50"
+    });
+  }, [isReminderSet, toast, id, userManager, title, date, time, location]);
+
+  const handleCardClick = React.useCallback(() => {
+    if (id) {
+      navigate(`/event/${id}`);
+    }
+  }, [id, navigate]);
+
+  const handleRegisterClick = React.useCallback((e) => {
+    e.stopPropagation();
+    if (registrationUrl) {
+      window.open(registrationUrl, '_blank');
+    } else if (id) {
+      navigate(`/event/${id}`);
+    }
+  }, [registrationUrl, id, navigate]);
   return /* @__PURE__ */ jsxs(
     motion.div,
     {
       initial: { opacity: 0, y: 20 },
       whileInView: { opacity: 1, y: 0 },
       viewport: { once: true },
-      whileHover: { y: -4 },
-      transition: { duration: 0.3 },
-      className: "group bg-card border border-border rounded-3xl overflow-hidden cursor-pointer",
+      whileHover: { y: -12, boxShadow: "0 30px 60px rgba(255, 122, 0, 0.25)" },
+      onClick: handleCardClick,
+      transition: { duration: 0.3, ease: "easeOut" },
+      className: "group bg-white border border-slate-200 rounded-2xl overflow-hidden cursor-pointer h-full flex flex-col hover:border-primary/50 shadow-md hover:shadow-2xl",
       style: { boxShadow: "0 4px 24px -4px rgba(255, 122, 0, 0.1)" },
       children: [
-        imageUrl && /* @__PURE__ */ jsxs("div", { className: "relative h-48 overflow-hidden bg-gradient-to-br from-primary/20 to-primary/5", children: [
+        imageUrl && /* @__PURE__ */ jsxs("div", { className: "relative w-full bg-gradient-to-br from-slate-50 to-slate-100 flex-shrink-0 flex items-center justify-center overflow-hidden", style: { minHeight: "280px", maxHeight: "320px" }, children: [
           /* @__PURE__ */ jsx(
             "img",
             {
               src: imageUrl,
               alt: title,
-              className: "w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              className: "w-auto h-full max-w-full object-contain transition-transform duration-500 group-hover:scale-110",
+              loading: "lazy",
+              onError: (e) => {
+                e.target.style.backgroundColor = "#e2e8f0";
+              }
             }
           ),
-          /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" })
+          /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" })
         ] }),
-        /* @__PURE__ */ jsxs("div", { className: "p-6", children: [
-          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 mb-4", children: tags.map((tag) => /* @__PURE__ */ jsx(
+        /* @__PURE__ */ jsxs("div", { className: "p-5 flex flex-col flex-grow bg-gradient-to-b from-white to-slate-50/50", children: [
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 mb-3", children: tags.map((tag) => /* @__PURE__ */ jsx(
             Badge,
             {
               variant: "secondary",
-              className: "bg-orange-light text-foreground hover:bg-primary hover:text-primary-foreground transition-colors",
+              className: "bg-orange-100 text-orange-900 hover:bg-primary hover:text-white transition-all duration-200 text-xs font-semibold px-3 py-1",
               children: tag
             },
             tag
           )) }),
-          /* @__PURE__ */ jsx("h3", { className: "font-display font-bold text-xl text-foreground mb-2 group-hover:text-primary transition-colors", children: title }),
-          /* @__PURE__ */ jsxs("p", { className: "text-sm text-muted-foreground mb-3 flex items-center gap-2", children: [
-            /* @__PURE__ */ jsx(Users, { className: "w-4 h-4" }),
-            organizer
+          /* @__PURE__ */ jsx("h3", { className: "font-bold text-lg text-slate-900 mb-2 group-hover:text-primary transition-colors duration-200 line-clamp-2", children: title }),
+          /* @__PURE__ */ jsxs("p", { className: "text-sm text-slate-600 mb-2 flex items-center gap-2", children: [
+            /* @__PURE__ */ jsx(Users, { className: "w-4 h-4 text-orange-500 flex-shrink-0" }),
+            /* @__PURE__ */ jsx("span", { className: "truncate", children: organizer })
           ] }),
-          /* @__PURE__ */ jsx("p", { className: "text-sm text-foreground/80 mb-4 line-clamp-2", children: description }),
-          /* @__PURE__ */ jsxs("div", { className: "space-y-2 mb-4", children: [
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
-              /* @__PURE__ */ jsx(Calendar, { className: "w-4 h-4 text-primary" }),
+          /* @__PURE__ */ jsx("p", { className: "text-sm text-slate-700 mb-4 line-clamp-2 flex-grow", children: description }),
+          /* @__PURE__ */ jsxs("div", { className: "space-y-2 mb-4 text-xs text-slate-600", children: [
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2", children: [
+              /* @__PURE__ */ jsx(Calendar, { className: "w-4 h-4 text-orange-500 flex-shrink-0" }),
               /* @__PURE__ */ jsxs("span", { children: [
                 date,
                 " \u2022 ",
                 time
               ] })
             ] }),
-            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 text-sm text-muted-foreground", children: [
-              /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-primary" }),
-              /* @__PURE__ */ jsx("span", { children: location })
+            /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-2 truncate", children: [
+              /* @__PURE__ */ jsx(MapPin, { className: "w-4 h-4 text-orange-500 flex-shrink-0" }),
+              /* @__PURE__ */ jsx("span", { className: "truncate", children: location })
             ] })
           ] }),
-          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3", children: [
+          /* @__PURE__ */ jsxs("div", { className: "flex items-center gap-3 mt-auto", children: [
             /* @__PURE__ */ jsxs(
               Button,
               {
-                className: "flex-1 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl",
+                onClick: handleRegisterClick,
+                className: "flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transform transition-all duration-200 hover:scale-105 active:scale-95 py-2",
                 children: [
-                  "Register Now",
+                  "Register",
                   /* @__PURE__ */ jsx(ExternalLink, { className: "w-4 h-4 ml-2" })
                 ]
               }
@@ -160,11 +227,21 @@ const EventCard = ({
             /* @__PURE__ */ jsx(TooltipProvider, { children: /* @__PURE__ */ jsxs(Tooltip, { children: [/* @__PURE__ */ jsx(TooltipTrigger, { asChild: true, children: /* @__PURE__ */ jsx(Button, {
                   size: "icon",
                   variant: "ghost",
-                  onClick: toggleBookmark,
+                  onClick: handleBookmark,
                   "aria-pressed": bookmarked,
-                  className: `rounded-xl border-border hover:border-primary hover:bg-orange-light transform transition-all duration-150 ${bookmarked ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`,
-                  children: /* @__PURE__ */ jsx(Bookmark, { className: `w-4 h-4 ${bookmarked ? "text-primary" : ""}` })
+                  className: `rounded-xl border border-border hover:border-primary hover:bg-orange-light transform transition-all duration-150 ${bookmarked ? "bg-primary/10 text-primary" : "text-muted-foreground hover:text-primary"}`,
+                  children: /* @__PURE__ */ jsx(Bookmark, { className: `w-4 h-4 ${bookmarked ? "text-primary fill-primary" : ""}` })
               }) }), /* tooltip content */ /* @__PURE__ */ jsx(TooltipContent, { sideOffset: 6, children: bookmarked ? "Bookmarked" : "Save" })] }) }),
+
+            /* Reminder button with tooltip */
+            /* @__PURE__ */ jsx(TooltipProvider, { children: /* @__PURE__ */ jsxs(Tooltip, { children: [/* @__PURE__ */ jsx(TooltipTrigger, { asChild: true, children: /* @__PURE__ */ jsx(Button, {
+                  size: "icon",
+                  variant: "ghost",
+                  onClick: handleReminder,
+                  "aria-pressed": isReminderSet,
+                  className: `rounded-xl border border-border hover:border-primary hover:bg-blue-light transform transition-all duration-150 ${isReminderSet ? "bg-blue-500/10 text-blue-600" : "text-muted-foreground hover:text-primary"}`,
+                  children: /* @__PURE__ */ jsx("svg", { className: `w-4 h-4 ${isReminderSet ? "fill-blue-600" : ""}`, fill: "none", stroke: "currentColor", viewBox: "0 0 24 24", children: /* @__PURE__ */ jsx("path", { strokeLinecap: "round", strokeLinejoin: "round", strokeWidth: 2, d: "M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" }) })
+              }) }), /* tooltip content */ /* @__PURE__ */ jsx(TooltipContent, { sideOffset: 6, children: isReminderSet ? "Reminder set" : "Set reminder" })] }) }),
 
             /* Share dropdown with tooltip and better hover */
             /* @__PURE__ */ jsx(TooltipProvider, { children: /* @__PURE__ */ jsxs(Tooltip, { children: [/* TooltipTrigger wraps a single span which contains the dropdown so Radix gets a single child */ /* @__PURE__ */ jsx(TooltipTrigger, { asChild: true, children: /* @__PURE__ */ jsxs("span", { className: "inline-flex", children: [/* Dropdown inside span */ /* @__PURE__ */ jsxs(DropdownMenu, {
@@ -172,7 +249,7 @@ const EventCard = ({
                   /* Trigger button */ /* @__PURE__ */ jsx(DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx(Button, {
                     size: "icon",
                     variant: "ghost",
-                    className: "rounded-xl border-border hover:border-primary hover:bg-orange-light transform transition-all duration-150 hover:scale-105 text-muted-foreground hover:text-primary",
+                    className: "rounded-xl border border-border hover:border-primary hover:bg-orange-light transform transition-all duration-150 hover:scale-105 text-muted-foreground hover:text-primary",
                     "aria-label": "Share",
                     title: "Share",
                     children: /* @__PURE__ */ jsx(Share2, { className: "w-4 h-4" })

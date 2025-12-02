@@ -67,7 +67,7 @@ const EventDetail = () => {
   const handleRegister = async () => {
     try {
       setRegistering(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/events/${id}/register`, {
         method: 'POST',
@@ -97,7 +97,7 @@ const EventDetail = () => {
 
   const handleWishlist = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
       const method = isWishlisted ? 'DELETE' : 'POST';
       const endpoint = isWishlisted
         ? `${API_BASE_URL}/events/${id}/wishlist`
@@ -127,7 +127,7 @@ const EventDetail = () => {
 
     try {
       setSubmittingReview(true);
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem('authToken');
 
       const response = await fetch(`${API_BASE_URL}/events/${id}/review`, {
         method: 'POST',

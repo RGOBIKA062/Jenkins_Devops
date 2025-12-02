@@ -18,17 +18,19 @@ import {
 
 const router = express.Router();
 
+// PROTECTED ROUTES - Must come BEFORE /:id to avoid route conflicts
+router.get('/user/events', authMiddleware, getUserEvents);
+router.get('/user/registered', authMiddleware, getUserRegisteredEvents);
+
 // PUBLIC ROUTES
 router.get('/all', getAllEvents);
 router.get('/:id', getEventById);
 
-// PROTECTED ROUTES
+// PROTECTED ROUTES - Other protected endpoints
 router.post('/create', authMiddleware, validateCreateEvent, createEvent);
 router.post('/:eventId/register', authMiddleware, registerForEvent);
 router.post('/:eventId/wishlist', authMiddleware, addToWishlist);
 router.delete('/:eventId/wishlist', authMiddleware, removeFromWishlist);
-router.get('/user/events', authMiddleware, getUserEvents);
-router.get('/user/registered', authMiddleware, getUserRegisteredEvents);
 router.put('/:eventId/update', authMiddleware, validateUpdateEvent, updateEvent);
 router.delete('/:eventId/delete', authMiddleware, deleteEvent);
 router.post('/:eventId/review', authMiddleware, validateReview, addReview);

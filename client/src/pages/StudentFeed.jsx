@@ -74,7 +74,8 @@ const StudentFeed = () => {
             features: event.features || {},
             wishlistCount: event.wishlistCount || 0,
             eventType: event.eventType,
-            skillLevel: event.skillLevel
+            skillLevel: event.skillLevel,
+            registrationUrl: event.registrationUrl || ''
           }));
 
           setEvents(transformedEvents);
@@ -124,7 +125,8 @@ const StudentFeed = () => {
       features: { hasCertificate: true },
       wishlistCount: 45,
       eventType: 'Workshop',
-      skillLevel: 'Beginner'
+      skillLevel: 'Beginner',
+      registrationUrl: 'https://forms.google.com/example'
     },
     {
       id: '2',
@@ -144,7 +146,8 @@ const StudentFeed = () => {
       features: { hasPrizePool: true },
       wishlistCount: 67,
       eventType: 'Competition',
-      skillLevel: 'Intermediate'
+      skillLevel: 'Intermediate',
+      registrationUrl: 'https://forms.google.com/example2'
     },
     {
       id: '3',
@@ -164,7 +167,8 @@ const StudentFeed = () => {
       features: { hasJobOpportunity: true },
       wishlistCount: 123,
       eventType: 'Career Fair',
-      skillLevel: 'All Levels'
+      skillLevel: 'All Levels',
+      registrationUrl: 'https://forms.google.com/example3'
     }
   ];
 

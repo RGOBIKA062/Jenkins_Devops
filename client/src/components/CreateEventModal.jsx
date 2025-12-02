@@ -113,6 +113,12 @@ const ValidationRules = {
       value: /^https?:\/\/.+\..+\.(jpg|jpeg|png|gif|webp)$/i,
       message: 'Please enter a valid image URL (jpg, png, gif, webp)'
     }
+  },
+  registrationUrl: {
+    pattern: {
+      value: /^https?:\/\/.+\..+/i,
+      message: 'Please enter a valid URL (must start with http:// or https://)'
+    }
   }
 };
 
@@ -243,6 +249,7 @@ const CreateEventModal = () => {
       hasLiveChat: false,
       hasGiveaways: false,
       bannerImage: '',
+      registrationUrl: '',
       requirements: '',
       deliverables: ''
     },
@@ -1110,6 +1117,20 @@ const CreateEventModal = () => {
                       </FormControl>
                     </FormItem>
                   )}
+
+                  <FormItem className="mt-4">
+                    <FormLabel>📝 Registration URL</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...form.register('registrationUrl', ValidationRules.registrationUrl)}
+                        placeholder="https://forms.google.com/d/... or custom registration link"
+                      />
+                    </FormControl>
+                    <FormMessage>{form.formState.errors.registrationUrl?.message}</FormMessage>
+                    <p className="text-xs text-gray-600 mt-2">
+                      Provide a Google Form link or any custom registration URL. Users will be directed here when they click "Register".
+                    </p>
+                  </FormItem>
                 </div>
 
                 <div className="border-b pb-4">
