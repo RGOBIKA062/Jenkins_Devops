@@ -344,72 +344,119 @@ const EventDetailNew = () => {
           initial={{ opacity: 0, y: -50 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="relative w-full h-screen max-h-[600px] overflow-hidden"
+          className="relative w-full h-auto overflow-hidden"
         >
           {/* Background Image */}
-          <img
-            src={event.bannerImage || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200'}
-            alt={event.title}
-            className="w-full h-full object-cover"
-          />
+          <div className="relative w-full h-[400px] lg:h-[500px] overflow-hidden rounded-b-3xl">
+            <img
+              src={event.bannerImage || 'https://images.unsplash.com/photo-1552664730-d307ca884978?w=1200'}
+              alt={event.title}
+              className="w-full h-full object-cover"
+            />
 
-          {/* Gradient Overlay */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent"></div>
 
-          {/* Back Button */}
-          <motion.button
-            onClick={() => navigate('/student')}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="absolute top-8 left-8 z-20 p-3 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all"
-          >
-            <ArrowLeft className="w-5 h-5 text-white" />
-          </motion.button>
-
-          {/* Content */}
-          <div className="absolute inset-0 flex flex-col justify-end p-8 lg:p-16">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.5 }}
-              className="space-y-6"
+            {/* Back Button */}
+            <motion.button
+              onClick={() => navigate('/student')}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="absolute top-6 left-6 z-20 p-3 rounded-full bg-white/20 backdrop-blur-md hover:bg-white/30 transition-all"
             >
-              {/* Event Type Badge */}
-              <div className="flex gap-3 flex-wrap">
-                <Badge className="bg-primary/90 text-primary-foreground backdrop-blur text-sm px-4 py-2">
-                  {event.eventType || 'Event'}
-                </Badge>
-                <Badge className="bg-orange-500/90 text-white backdrop-blur text-sm px-4 py-2">
-                  {event.skillLevel || 'All Levels'}
-                </Badge>
+              <ArrowLeft className="w-5 h-5 text-white" />
+            </motion.button>
+
+            {/* Content */}
+            <div className="absolute inset-0 flex flex-col justify-end p-8 lg:p-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="space-y-4"
+              >
+                {/* Event Type Badge */}
+                <div className="flex gap-3 flex-wrap">
+                  <Badge className="bg-primary/90 text-primary-foreground backdrop-blur text-sm px-4 py-2">
+                    {event.eventType || 'Event'}
+                  </Badge>
+                  <Badge className="bg-orange-500/90 text-white backdrop-blur text-sm px-4 py-2">
+                    {event.skillLevel || 'All Levels'}
+                  </Badge>
+                </div>
+
+                {/* Title */}
+                <h1 className="text-4xl lg:text-6xl font-bold text-white leading-tight drop-shadow-lg">
+                  {event.title}
+                </h1>
+
+                {/* Organizer */}
+                <p className="text-lg text-white/90 flex items-center gap-2">
+                  <span className="inline-block w-2 h-2 bg-primary rounded-full"></span>
+                  Organized by <span className="font-semibold">{event.organizer?.organizerName || 'Event Organizer'}</span>
+                </p>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Info Bar Below Hero */}
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-6 border-b border-slate-200/50 bg-white/50 backdrop-blur">
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4, duration: 0.5 }}
+              className="grid grid-cols-2 lg:grid-cols-4 gap-6"
+            >
+              {/* Date & Time */}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-primary/10">
+                  <Calendar className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Date & Time</p>
+                  <p className="text-sm lg:text-base font-bold text-foreground">{formattedDate}</p>
+                  <p className="text-xs text-muted-foreground">{event.startTime}</p>
+                </div>
               </div>
 
-              {/* Title */}
-              <h1 className="text-5xl lg:text-7xl font-bold text-white leading-tight drop-shadow-lg">
-                {event.title}
-              </h1>
-
-              {/* Organizer */}
-              <p className="text-xl text-white/90 flex items-center gap-2">
-                <span className="inline-block w-2 h-2 bg-primary rounded-full"></span>
-                Organized by <span className="font-semibold">{event.organizer?.organizerName || 'Event Organizer'}</span>
-              </p>
-
-              {/* Quick Stats */}
-              <div className="flex flex-wrap gap-8 pt-4">
-                <div className="flex items-center gap-3 text-white">
-                  <Calendar className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-white/70">Date & Time</p>
-                    <p className="font-semibold">{formattedDate}</p>
-                  </div>
+              {/* Location */}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-primary/10">
+                  <MapPin className="w-6 h-6 text-primary" />
                 </div>
-                <div className="flex items-center gap-3 text-white">
-                  <Users className="w-5 h-5 text-primary" />
-                  <div>
-                    <p className="text-sm text-white/70">Attendees</p>
-                    <p className="font-semibold">{event.registeredCount} registered</p>
-                  </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Location</p>
+                  <p className="text-sm lg:text-base font-bold text-foreground">
+                    {event.location?.type === 'Online' ? '🌐 Online' : event.location?.city || 'TBD'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Attendees */}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-primary/10">
+                  <Users className="w-6 h-6 text-primary" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Attendees</p>
+                  <p className="text-sm lg:text-base font-bold text-foreground">
+                    {event.registeredCount}/{event.totalCapacity}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{spotsLeft} spots left</p>
+                </div>
+              </div>
+
+              {/* Rating */}
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-yellow-100/50">
+                  <Star className="w-6 h-6 text-yellow-500" />
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground font-medium">Rating</p>
+                  <p className="text-sm lg:text-base font-bold text-foreground">
+                    {event.ratings?.overallRating || 'N/A'} / 5
+                  </p>
+                  <p className="text-xs text-muted-foreground">{event.ratings?.totalReviews || 0} reviews</p>
                 </div>
               </div>
             </motion.div>
@@ -417,104 +464,10 @@ const EventDetailNew = () => {
         </motion.div>
 
         {/* Main Content */}
-        <div className="container mx-auto px-4 sm:px-6 lg:px-8 -mt-20 relative z-10 pb-16">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 pb-16">
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Main Content - 2 cols */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Key Information Cards */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                className="grid md:grid-cols-2 gap-4"
-              >
-                {/* Date Card */}
-                <Card className="p-6 rounded-2xl border-orange-200/50 bg-white/80 backdrop-blur shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <Calendar className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground font-semibold">Date & Time</p>
-                      <p className="text-lg font-bold text-foreground mt-1">{formattedDate}</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {event.startTime} - {event.endTime} {event.timezone || 'IST'}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Location Card */}
-                <Card className="p-6 rounded-2xl border-orange-200/50 bg-white/80 backdrop-blur shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <MapPin className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground font-semibold">Location</p>
-                      <p className="text-lg font-bold text-foreground mt-1">
-                        {event.location?.type === 'Online' ? '🌐 Online Event' : event.location?.venue || 'TBD'}
-                      </p>
-                      {event.location?.type !== 'Online' && (
-                        <p className="text-sm text-muted-foreground mt-1">
-                          {event.location?.address && `${event.location.address}, `}{event.location?.city}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Attendees Card */}
-                <Card className="p-6 rounded-2xl border-orange-200/50 bg-white/80 backdrop-blur shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <Users className="w-6 h-6 text-primary" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground font-semibold">Attendees</p>
-                      <p className="text-lg font-bold text-foreground mt-1">
-                        {event.registeredCount}/{event.totalCapacity}
-                      </p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {spotsLeft} spots available
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Rating Card */}
-                <Card className="p-6 rounded-2xl border-orange-200/50 bg-white/80 backdrop-blur shadow-lg hover:shadow-xl transition-all duration-300 hover:border-primary">
-                  <div className="flex items-start gap-4">
-                    <div className="p-3 rounded-lg bg-yellow-100/50">
-                      <Star className="w-6 h-6 text-yellow-500" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm text-muted-foreground font-semibold">Rating & Reviews</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <p className="text-lg font-bold text-foreground">
-                          {event.ratings?.overallRating || 'N/A'} / 5
-                        </p>
-                        <div className="flex gap-0.5">
-                          {[...Array(5)].map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-4 h-4 ${
-                                i < Math.floor(event.ratings?.overallRating || 0)
-                                  ? 'fill-yellow-500 text-yellow-500'
-                                  : 'text-gray-300'
-                              }`}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        {event.ratings?.totalRatings || 0} reviews
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
               {/* Description Section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}

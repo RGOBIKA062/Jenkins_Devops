@@ -1,9 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
@@ -25,14 +24,18 @@ const UserProfile = () => {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  
   const [formData, setFormData] = useState({
-    name: user?.name || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    location: user?.location || '',
-    bio: user?.bio || '',
+    name: '',
+    email: '',
+    phone: '',
+    location: '',
+    bio: '',
   });
+  
   const [preferences, setPreferences] = useState({
     emailNotifications: true,
     eventReminders: true,
@@ -40,10 +43,48 @@ const UserProfile = () => {
     weeklyDigest: true,
   });
 
-  if (!isAuthenticated) {
-    navigate('/auth');
-    return null;
-  }
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Initialize form data on mount
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate('/auth');
+      return;
+    }
+
+    // Load from localStorage
+    const savedProfile = localStorage.getItem('userProfile');
+    const savedPreferences = localStorage.getItem('userPreferences');
+
+    if (savedProfile) {
+      try {
+        setFormData(JSON.parse(savedProfile));
+      } catch (e) {
+        console.error('Error loading profile:', e);
+      }
+    } else if (user) {
+      // Initialize from auth context
+      setFormData({
+        name: user?.name || '',
+        email: user?.email || '',
+        phone: user?.phone || '',
+        location: user?.location || '',
+        bio: user?.bio || '',
+      });
+    }
+
+    if (savedPreferences) {
+      try {
+        setPreferences(JSON.parse(savedPreferences));
+      } catch (e) {
+        console.error('Error loading preferences:', e);
+      }
+    }
+  }, [isAuthenticated, user, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -51,19 +92,114 @@ const UserProfile = () => {
   };
 
   const handlePreferenceChange = (pref) => {
-    setPreferences(prev => ({ ...prev, [pref]: !prev[pref] }));
+    setPreferences(prev => {
+      const updated = { ...prev, [pref]: !prev[pref] };
+      // Save to localStorage immediately
+      localStorage.setItem('userPreferences', JSON.stringify(updated));
+      return updated;
+    });
+    toast({ description: 'Preference updated' });
   };
 
   const handleSaveProfile = async () => {
     try {
-      setLoading(true);
-      // Save to localStorage for now, would be API call in production
+      // Validation
+      if (!formData.name.trim()) {
+        toast({ description: '❌ Please enter your name', variant: 'destructive' });
+        return;
+      }
+
+      if (formData.phone && !/^[\d\s\-\+\(\)]+$/.test(formData.phone)) {
+        toast({ description: '❌ Invalid phone number format', variant: 'destructive' });
+        return;
+      }
+
+      setSavingProfile(true);
+
+      // Save to localStorage
       localStorage.setItem('userProfile', JSON.stringify(formData));
+      
+      // Try to sync with backend if authenticated
+      const token = localStorage.getItem('authToken');
+      if (token) {
+        try {
+          const response = await fetch('http://localhost:5000/api/users/profile', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`,
+            },
+            body: JSON.stringify(formData),
+          });
+
+          if (!response.ok && response.status !== 404) {
+            console.warn('Backend sync failed:', response.status);
+          }
+        } catch (err) {
+          console.log('Backend sync unavailable, using local storage:', err.message);
+        }
+      }
+
       toast({ description: '✅ Profile updated successfully!' });
     } catch (error) {
+      console.error('Save error:', error);
       toast({ description: '❌ Failed to update profile', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      setSavingProfile(false);
+    }
+  };
+
+  const handleChangePassword = async () => {
+    try {
+      if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+        toast({ description: '❌ Please fill all password fields', variant: 'destructive' });
+        return;
+      }
+
+      if (passwordData.newPassword !== passwordData.confirmPassword) {
+        toast({ description: '❌ New passwords do not match', variant: 'destructive' });
+        return;
+      }
+
+      if (passwordData.newPassword.length < 6) {
+        toast({ description: '❌ Password must be at least 6 characters', variant: 'destructive' });
+        return;
+      }
+
+      setPasswordLoading(true);
+      const token = localStorage.getItem('authToken');
+
+      if (!token) {
+        toast({ description: '❌ Please login first', variant: 'destructive' });
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/users/change-password', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        toast({ description: '✅ Password changed successfully!' });
+        setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
+        setShowPasswordForm(false);
+      } else {
+        toast({ description: `❌ ${data.message || 'Failed to change password'}`, variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Password change error:', error);
+      toast({ description: '❌ Error changing password', variant: 'destructive' });
+    } finally {
+      setPasswordLoading(false);
     }
   };
 
@@ -72,6 +208,10 @@ const UserProfile = () => {
     toast({ description: 'Logged out successfully' });
     navigate('/auth');
   };
+
+  if (!isAuthenticated) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-orange-50">
@@ -107,10 +247,10 @@ const UserProfile = () => {
             >
               <div className="text-center mb-6">
                 <div className="w-20 h-20 rounded-full bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                  {user?.name?.charAt(0).toUpperCase() || 'U'}
+                  {formData.name?.charAt(0).toUpperCase() || user?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
-                <h2 className="font-bold text-lg text-slate-900">{user?.name || 'User'}</h2>
-                <p className="text-sm text-slate-600 mt-1">{user?.email}</p>
+                <h2 className="font-bold text-lg text-slate-900">{formData.name || user?.name || 'User'}</h2>
+                <p className="text-sm text-slate-600 mt-1">{formData.email || user?.email}</p>
               </div>
 
               <div className="space-y-2">
@@ -152,7 +292,7 @@ const UserProfile = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
-                      Full Name
+                      Full Name *
                     </label>
                     <Input
                       name="name"
@@ -172,7 +312,6 @@ const UserProfile = () => {
                       name="email"
                       type="email"
                       value={formData.email}
-                      onChange={handleInputChange}
                       placeholder="your@email.com"
                       disabled
                       className="rounded-lg border-slate-200 bg-slate-50"
@@ -224,11 +363,17 @@ const UserProfile = () => {
 
                 <Button
                   onClick={handleSaveProfile}
-                  disabled={loading}
-                  className="bg-orange-500 hover:bg-orange-600 w-full md:w-auto"
+                  disabled={savingProfile}
+                  className="bg-orange-500 hover:bg-orange-600 w-full md:w-auto text-base font-semibold"
                 >
-                  <Save className="w-4 h-4 mr-2" />
-                  Save Changes
+                  {savingProfile ? (
+                    <>Saving...</>
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
                 </Button>
               </div>
             </motion.div>
@@ -247,17 +392,23 @@ const UserProfile = () => {
                 </div>
               </div>
 
-              <div className="p-6 space-y-4">
+              <div className="p-6 space-y-3">
                 {Object.entries(preferences).map(([key, value]) => (
-                  <label key={key} className="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors">
+                  <label key={key} className="flex items-center p-3 rounded-lg hover:bg-slate-50 cursor-pointer transition-colors border border-transparent hover:border-slate-200">
                     <input
                       type="checkbox"
                       checked={value}
                       onChange={() => handlePreferenceChange(key)}
                       className="w-4 h-4 rounded text-orange-500 border-slate-300"
                     />
-                    <span className="ml-3 text-sm text-slate-700 capitalize">
-                      {key.replace(/([A-Z])/g, ' $1').trim()}
+                    <span className="ml-3 text-sm font-medium text-slate-700 capitalize flex-1">
+                      {key === 'emailNotifications' && 'Email Notifications'}
+                      {key === 'eventReminders' && 'Event Reminders'}
+                      {key === 'newEventNotifications' && 'New Event Notifications'}
+                      {key === 'weeklyDigest' && 'Weekly Digest'}
+                    </span>
+                    <span className="text-xs text-slate-500">
+                      {value ? 'ON' : 'OFF'}
                     </span>
                   </label>
                 ))}
@@ -280,20 +431,54 @@ const UserProfile = () => {
 
               <div className="p-6 space-y-4">
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-4">
                     <div>
                       <h4 className="font-medium text-slate-900">Change Password</h4>
                       <p className="text-sm text-slate-600 mt-1">Update your password to keep your account secure</p>
                     </div>
                     <Button
+                      onClick={() => setShowPasswordForm(!showPasswordForm)}
                       variant="outline"
                       size="sm"
                       className="flex-shrink-0"
                     >
                       <Lock className="w-4 h-4 mr-2" />
-                      Change
+                      {showPasswordForm ? 'Cancel' : 'Change'}
                     </Button>
                   </div>
+
+                  {showPasswordForm && (
+                    <div className="mt-4 space-y-3 pt-4 border-t border-slate-200">
+                      <Input
+                        type="password"
+                        placeholder="Current Password"
+                        value={passwordData.currentPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, currentPassword: e.target.value }))}
+                        className="rounded-lg"
+                      />
+                      <Input
+                        type="password"
+                        placeholder="New Password"
+                        value={passwordData.newPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, newPassword: e.target.value }))}
+                        className="rounded-lg"
+                      />
+                      <Input
+                        type="password"
+                        placeholder="Confirm New Password"
+                        value={passwordData.confirmPassword}
+                        onChange={(e) => setPasswordData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="rounded-lg"
+                      />
+                      <Button
+                        onClick={handleChangePassword}
+                        disabled={passwordLoading}
+                        className="w-full bg-purple-500 hover:bg-purple-600 font-semibold"
+                      >
+                        {passwordLoading ? 'Changing...' : 'Update Password'}
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
                 <div className="p-4 bg-slate-50 rounded-lg border border-slate-200">
@@ -306,8 +491,9 @@ const UserProfile = () => {
                       variant="outline"
                       size="sm"
                       className="flex-shrink-0"
+                      disabled
                     >
-                      Enable
+                      Coming Soon
                     </Button>
                   </div>
                 </div>
@@ -322,8 +508,9 @@ const UserProfile = () => {
                       variant="outline"
                       size="sm"
                       className="flex-shrink-0 text-red-600 hover:text-red-700 hover:bg-red-100 border-red-200"
+                      disabled
                     >
-                      Delete
+                      Coming Soon
                     </Button>
                   </div>
                 </div>
