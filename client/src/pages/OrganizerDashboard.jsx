@@ -1,4 +1,5 @@
 import { jsx, jsxs } from "react/jsx-runtime";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import { Card } from "@/components/ui/card";
@@ -17,6 +18,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 const OrganizerDashboard = () => {
+  const navigate = useNavigate();
   const statsCards = [
     { label: "Total Reach", value: "12,450", change: "+23%", icon: Eye, color: "text-blue-500" },
     { label: "Active Events", value: "8", change: "+2", icon: Calendar, color: "text-green-500" },
@@ -66,7 +68,7 @@ const OrganizerDashboard = () => {
               /* @__PURE__ */ jsx("h1", { className: "font-display font-bold text-4xl sm:text-5xl text-foreground mb-2", children: "Organizer Dashboard" }),
               /* @__PURE__ */ jsx("p", { className: "text-lg text-muted-foreground", children: "Manage events and track audience insights" })
             ] }),
-            /* @__PURE__ */ jsxs(Button, { className: "bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-6 h-12", children: [
+            /* @__PURE__ */ jsxs(Button, { onClick: () => navigate("/create-event"), className: "bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-xl px-6 h-12", children: [
               /* @__PURE__ */ jsx(Plus, { className: "w-5 h-5 mr-2" }),
               "Create Event"
             ] })

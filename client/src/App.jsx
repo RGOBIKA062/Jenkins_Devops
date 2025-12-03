@@ -13,6 +13,7 @@ import OrganizerDashboard from "./pages/OrganizerDashboard";
 import EventDetail from "./pages/EventDetailNew";
 import UserDashboard from "./pages/UserDashboard";
 import UserProfile from "./pages/UserProfile";
+import CreateEventPage from "./pages/CreateEventPage";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -24,6 +25,7 @@ function App() {
 					<Route path="/" element={<Landing />} />
 					<Route path="/auth" element={<Auth />} />
 					<Route path="/student" element={<StudentFeed />} />
+					<Route path="/create-event" element={<CreateEventPage />} />
 					<Route path="/compiler-pro" element={<OnlineCompilerPro />} />
 					<Route path="/faculty" element={<FacultyDashboard />} />
 						<Route path="/freelancer" element={<FreelancerDashboard />} />

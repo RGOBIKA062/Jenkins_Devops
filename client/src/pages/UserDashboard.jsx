@@ -279,7 +279,7 @@ const UserDashboard = () => {
             )}
             <div className="mt-6 text-center">
               <Button
-                onClick={() => navigate('/student')}
+                onClick={() => navigate('/create-event')}
                 className="bg-orange-500 hover:bg-orange-600"
               >
                 <Plus className="w-4 h-4 mr-2" />

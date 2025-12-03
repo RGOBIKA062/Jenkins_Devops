@@ -90,6 +90,9 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate("/student")}>
                     Student Feed
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/create-event")}>
+                    Create Event
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/faculty")}>
                     Faculty Dashboard
                   </DropdownMenuItem>
