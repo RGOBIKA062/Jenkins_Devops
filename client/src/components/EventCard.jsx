@@ -18,16 +18,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 const EventCard = ({
   id,
-  title,
-  organizer,
-  description,
-  date,
-  time,
-  location,
-  tags,
-  imageUrl,
+  title = "Untitled Event",
+  organizer = "Unknown Organizer",
+  description = "No description available",
+  date = "TBD",
+  time = "TBD",
+  location = "TBD",
+  tags = [],
+  imageUrl = null,
   attendees = 0,
-  registrationUrl
+  registrationUrl = null
 }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -182,15 +182,15 @@ const EventCard = ({
           /* @__PURE__ */ jsx("div", { className: "absolute inset-0 bg-gradient-to-t from-black/20 via-transparent to-transparent pointer-events-none" })
         ] }),
         /* @__PURE__ */ jsxs("div", { className: "p-5 flex flex-col flex-grow bg-gradient-to-b from-white to-slate-50/50", children: [
-          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 mb-3", children: tags.map((tag) => /* @__PURE__ */ jsx(
+          /* @__PURE__ */ jsx("div", { className: "flex flex-wrap gap-2 mb-3", children: (Array.isArray(tags) && tags.length > 0) ? tags.map((tag) => /* @__PURE__ */ jsx(
             Badge,
             {
               variant: "secondary",
               className: "bg-orange-100 text-orange-900 hover:bg-primary hover:text-white transition-all duration-200 text-xs font-semibold px-3 py-1",
-              children: tag
+              children: String(tag)
             },
-            tag
-          )) }),
+            String(tag)
+          )) : null }),
           /* @__PURE__ */ jsx("h3", { className: "font-bold text-lg text-slate-900 mb-2 group-hover:text-primary transition-colors duration-200 line-clamp-2", children: title }),
           /* @__PURE__ */ jsxs("p", { className: "text-sm text-slate-600 mb-2 flex items-center gap-2", children: [
             /* @__PURE__ */ jsx(Users, { className: "w-4 h-4 text-orange-500 flex-shrink-0" }),

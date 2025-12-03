@@ -44,12 +44,6 @@ const Navbar = () => {
             >
               Get Started
             </Link>
-            <Link
-              to="/organizer"
-              className="hidden md:block text-base lg:text-lg font-semibold text-foreground/80 hover:text-primary transition-colors"
-            >
-              Organizer
-            </Link>
 
             {/* Dashboard & Profile Links - Always visible when logged in */}
             {isAuthenticated && (
@@ -95,9 +89,6 @@ const Navbar = () => {
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/student")}>
                     Student Feed
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate("/organizer")}>
-                    Organizer Dashboard
                   </DropdownMenuItem>
                   <DropdownMenuItem onClick={() => navigate("/faculty")}>
                     Faculty Dashboard

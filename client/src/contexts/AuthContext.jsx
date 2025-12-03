@@ -54,6 +54,17 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
+  /**
+   * Login user - sets both user and authenticated state
+   */
+  const login = (userData) => {
+    setUser(userData);
+    setIsAuthenticated(true);
+  };
+
+  /**
+   * Logout user
+   */
   const logout = () => {
     localStorage.removeItem("authToken");
     localStorage.removeItem("user");
@@ -65,8 +76,10 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     setUser,
+    login,
     loading,
     isAuthenticated,
+    setIsAuthenticated,
     logout,
   };
 

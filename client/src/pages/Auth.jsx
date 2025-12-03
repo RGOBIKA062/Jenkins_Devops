@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import Navbar from "@/components/Navbar";
@@ -21,6 +22,7 @@ const API_BASE_URL = "http://localhost:5000/api";
 export default function Auth() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { login, isAuthenticated } = useAuth();
   const [loading, setLoading] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [signupError, setSignupError] = useState("");
@@ -56,6 +58,13 @@ export default function Auth() {
   
   const [carouselApi, setCarouselApi] = useState(null);
   const autoplayRef = useRef(null);
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard");
+    }
+  }, [isAuthenticated, navigate]);
 
   // Try to load up to 3 named assets from src/assets matching caurosel1/2/3
   let slideUrls = [];
@@ -112,26 +121,31 @@ export default function Auth() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      // Update auth context with both user and authenticated state
+      login(data.user);
+
       toast({
         title: "✅ Welcome back!",
         description: "You've successfully logged in.",
       });
 
-      // Redirect based on user type
-      const userType = data.user.userType;
-      if (userType === "student") {
-        navigate("/student");
-      } else if (userType === "faculty") {
-        navigate("/faculty");
-      } else if (userType === "industry") {
-        navigate("/industry");
-      } else if (userType === "freelancer") {
-        navigate("/freelancer");
-      } else if (userType === "organizer") {
-        navigate("/organizer");
-      } else {
-        navigate("/student");
-      }
+      // Redirect based on user type - small delay to ensure state updates
+      setTimeout(() => {
+        const userType = data.user.userType;
+        if (userType === "student") {
+          navigate("/student");
+        } else if (userType === "faculty") {
+          navigate("/faculty");
+        } else if (userType === "industry") {
+          navigate("/industry");
+        } else if (userType === "freelancer") {
+          navigate("/freelancer");
+        } else if (userType === "organizer") {
+          navigate("/organizer");
+        } else {
+          navigate("/student");
+        }
+      }, 100);
 
       // Clear form
       setLoginEmail("");
@@ -201,14 +215,19 @@ export default function Auth() {
       localStorage.setItem("authToken", data.token);
       localStorage.setItem("user", JSON.stringify(data.user));
 
+      // Update auth context with both user and authenticated state
+      login(data.user);
+
       toast({
         title: "✅ Account created!",
         description: "Welcome to AllCollegeEvents! You have successfully signed up.",
         className: "bg-green-50 border-green-200",
       });
 
-      // Redirect based on user type
-      navigate(`/${signupUserType}`);
+      // Redirect based on user type - small delay to ensure state updates
+      setTimeout(() => {
+        navigate(`/${data.user.userType}`);
+      }, 100);
 
       // Clear form
       setSignupFullName("");
