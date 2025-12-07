@@ -6,8 +6,9 @@ import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import {
@@ -34,6 +35,8 @@ const FacultyDashboard = () => {
   const [featuredFaculty, setFeaturedFaculty] = useState([]);
   const [mentorProfile, setMentorProfile] = useState(null);
   const [mentorStats, setMentorStats] = useState(null);
+  const [mentorRequests, setMentorRequests] = useState([]);
+  const [requestFilter, setRequestFilter] = useState('all');
 
   // UI State
   const [loading, setLoading] = useState(true);
@@ -43,6 +46,9 @@ const FacultyDashboard = () => {
   const [showEventModal, setShowEventModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [showRequestResponseDialog, setShowRequestResponseDialog] = useState(false);
+  const [responseMessage, setResponseMessage] = useState('');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -177,23 +183,40 @@ const FacultyDashboard = () => {
           console.log('No mentor profile yet');
         }
 
-        // Fetch mentor analytics/stats
+        // Calculate mentor stats from requests
         try {
-          const statsRes = await fetch('http://localhost:5000/api/mentors/analytics', {
+          const requestsRes = await fetch('http://localhost:5000/api/mentors/faculty-requests', {
             method: 'GET',
             headers: { 
               'Authorization': `Bearer ${token}`,
               'Content-Type': 'application/json'
             },
           });
-          const statsData = await statsRes.json();
+          const requestsData = await requestsRes.json();
 
-          if (statsData.success) {
-            setMentorStats(statsData.data);
+          if (requestsData.success && Array.isArray(requestsData.data)) {
+            const activeMentees = requestsData.data.filter(req => req.status === 'accepted').length;
+            const pendingRequests = requestsData.data.filter(req => req.status === 'pending').length;
+            
+            setMentorStats({
+              activeMentees: activeMentees,
+              pendingRequests: pendingRequests,
+              completedSessions: 0,
+              averageRating: 'N/A',
+              totalEarnings: 0,
+            });
+            
+            setMentorRequests(requestsData.data);
           }
-        } catch (statsError) {
-          // Stats don't exist yet, which is fine
-          console.log('No mentor stats yet');
+        } catch (requestsError) {
+          console.log('No mentor requests yet');
+          setMentorStats({
+            activeMentees: 0,
+            pendingRequests: 0,
+            completedSessions: 0,
+            averageRating: 'N/A',
+            totalEarnings: 0,
+          });
         }
       } catch (error) {
         console.error('Error fetching faculty data:', error);
@@ -524,6 +547,82 @@ const FacultyDashboard = () => {
     }
   };
 
+  // Handle Accept Mentor Request
+  const handleAcceptRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('No auth token');
+
+      const res = await fetch(`http://localhost:5000/api/mentors/faculty-request/${requestId}/accept`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ message: responseMessage }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: 'Request accepted!',
+        });
+        setMentorRequests(mentorRequests.map(r => 
+          r._id === requestId ? { ...r, status: 'accepted' } : r
+        ));
+        setShowRequestResponseDialog(false);
+        setResponseMessage('');
+        setSelectedRequest(null);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to accept request',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Handle Reject Mentor Request
+  const handleRejectRequest = async (requestId) => {
+    try {
+      const token = localStorage.getItem('authToken');
+      if (!token) throw new Error('No auth token');
+
+      const res = await fetch(`http://localhost:5000/api/mentors/faculty-request/${requestId}/reject`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason: responseMessage }),
+      });
+
+      const data = await res.json();
+
+      if (data.success) {
+        toast({
+          title: 'Success',
+          description: 'Request rejected',
+        });
+        setMentorRequests(mentorRequests.map(r => 
+          r._id === requestId ? { ...r, status: 'rejected' } : r
+        ));
+        setShowRequestResponseDialog(false);
+        setResponseMessage('');
+        setSelectedRequest(null);
+      }
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to reject request',
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (authLoading || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-50">
@@ -626,10 +725,13 @@ const FacultyDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full bg-white shadow-sm">
+          <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full bg-white shadow-sm">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="events">My Events</TabsTrigger>
             <TabsTrigger value="mentoring">Mentoring</TabsTrigger>
+            <TabsTrigger value="requests">
+              Requests {mentorRequests.length > 0 && `(${mentorRequests.length})`}
+            </TabsTrigger>
             <TabsTrigger value="featured">Featured</TabsTrigger>
           </TabsList>
 
@@ -856,12 +958,6 @@ const FacultyDashboard = () => {
                           <p className="text-3xl font-bold text-green-600">{mentorStats?.completedSessions || 0}</p>
                         </div>
                         <div className="bg-white rounded-lg p-4">
-                          <p className="text-xs text-gray-600 mb-1">Avg Rating</p>
-                          <p className="text-3xl font-bold text-yellow-600">
-                            {mentorStats?.averageRating?.toFixed(1) || 'N/A'}⭐
-                          </p>
-                        </div>
-                        <div className="bg-white rounded-lg p-4">
                           <p className="text-xs text-gray-600 mb-1">Total Earnings</p>
                           <p className="text-3xl font-bold text-green-700">₹{mentorStats?.totalEarnings || 0}</p>
                         </div>
@@ -982,6 +1078,117 @@ const FacultyDashboard = () => {
                       </Card>
                     </motion.div>
                   ))
+                )}
+              </div>
+            </motion.div>
+          </TabsContent>
+
+          {/* Mentor Requests Tab */}
+          <TabsContent value="requests" className="mt-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              {/* Filter Buttons */}
+              <div className="flex gap-2 flex-wrap">
+                {['all', 'pending', 'accepted', 'rejected'].map(filter => (
+                  <Button
+                    key={filter}
+                    onClick={() => setRequestFilter(filter)}
+                    variant={requestFilter === filter ? 'default' : 'outline'}
+                    className={requestFilter === filter ? 'bg-indigo-600' : ''}
+                  >
+                    {filter.charAt(0).toUpperCase() + filter.slice(1)}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Requests List */}
+              <div className="space-y-4">
+                {mentorRequests.length === 0 ? (
+                  <Card className="p-12 text-center bg-white border border-gray-200">
+                    <p className="text-gray-600 font-medium">No mentor requests yet</p>
+                    <p className="text-sm text-gray-500 mt-2">Students will see your profile and send requests</p>
+                  </Card>
+                ) : (
+                  mentorRequests
+                    .filter(req => requestFilter === 'all' || req.status === requestFilter)
+                    .map((request) => (
+                      <motion.div
+                        key={request._id}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                      >
+                        <Card className="p-6 bg-white border border-gray-200 hover:shadow-md transition">
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-3">
+                                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                                  <span className="text-lg font-bold text-indigo-600">
+                                    {request.studentName?.charAt(0)?.toUpperCase()}
+                                  </span>
+                                </div>
+                                <div>
+                                  <h4 className="font-bold text-gray-900">{request.studentName}</h4>
+                                  <p className="text-sm text-gray-600">
+                                    Requested {new Date(request.requestedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                              </div>
+
+                              <p className="text-gray-700 mb-4">{request.message}</p>
+
+                              {request.skills?.length > 0 && (
+                                <div className="mb-3">
+                                  <p className="text-xs font-semibold text-gray-600 mb-2">Skills:</p>
+                                  <div className="flex flex-wrap gap-2">
+                                    {request.skills.map((skill, idx) => (
+                                      <Badge key={idx} variant="secondary">{skill}</Badge>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Status Badge */}
+                            <div className="flex-shrink-0">
+                              <Badge className={
+                                request.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                request.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                                request.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                                'bg-gray-100 text-gray-800'
+                              }>
+                                {request.status.toUpperCase()}
+                              </Badge>
+                            </div>
+                          </div>
+
+                          {/* Action Buttons - Only for Pending */}
+                          {request.status === 'pending' && (
+                            <div className="flex gap-2 mt-4 pt-4 border-t border-gray-200">
+                              <Button
+                                onClick={() => {
+                                  setSelectedRequest(request);
+                                  setShowRequestResponseDialog(true);
+                                  setResponseMessage('');
+                                }}
+                                className="flex-1 bg-green-600 hover:bg-green-700"
+                              >
+                                Accept Request
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  setSelectedRequest(request);
+                                  setShowRequestResponseDialog(true);
+                                  setResponseMessage('');
+                                }}
+                                variant="destructive"
+                                className="flex-1"
+                              >
+                                Reject Request
+                              </Button>
+                            </div>
+                          )}
+                        </Card>
+                      </motion.div>
+                    ))
                 )}
               </div>
             </motion.div>
@@ -1385,6 +1592,63 @@ const FacultyDashboard = () => {
               Close
             </Button>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Response Dialog */}
+      <Dialog open={showRequestResponseDialog} onOpenChange={setShowRequestResponseDialog}>
+        <DialogContent className="sm:max-w-[500px] bg-white">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-gray-900">
+              {selectedRequest?.status === 'accepted' ? 'Accept' : 'Reject'} Mentor Request
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* Student Info */}
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600">From:</p>
+              <p className="font-bold text-gray-900">{selectedRequest?.studentName}</p>
+              <p className="text-sm text-gray-700 mt-2">"{selectedRequest?.message}"</p>
+            </div>
+
+            {/* Response Message */}
+            <div>
+              <Label className="font-semibold text-gray-900">
+                {selectedRequest?.status === 'accepted' ? 'Acceptance Message' : 'Rejection Reason'}
+              </Label>
+              <p className="text-sm text-gray-600 mb-2">Optional - Share your response with the student</p>
+              <textarea
+                value={responseMessage}
+                onChange={(e) => setResponseMessage(e.target.value)}
+                placeholder={selectedRequest?.status === 'accepted' ? 'E.g., Great! I\'d love to mentor you. Let\'s schedule a meeting...' : 'E.g., I\'m currently at capacity...'}
+                className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                rows={4}
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button
+              onClick={() => setShowRequestResponseDialog(false)}
+              variant="outline"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (selectedRequest?.status === 'pending') {
+                  handleAcceptRequest(selectedRequest._id);
+                } else {
+                  handleRejectRequest(selectedRequest._id);
+                }
+                setShowRequestResponseDialog(false);
+              }}
+              className={selectedRequest?.status === 'accepted' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
+            >
+              {selectedRequest?.status === 'pending' ? 'Confirm' : 'Reject'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 

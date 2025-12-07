@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { validationResult } from 'express-validator';
 import User from '../models/User.js';
+import Faculty from '../models/Faculty.js';
 
 /**
  * Generate JWT Token
@@ -54,7 +55,7 @@ export const signup = async (req, res, next) => {
     }
 
     const { fullName, email, password, confirmPassword, userType } = req.body;
-    console.log(`📝 Signup attempt for email: ${email}, fullName: ${fullName}`);
+    console.log(`📝 Signup attempt for email: ${email}, fullName: ${fullName}, userType: ${userType}`);
 
     // Check if email already exists
     let user = await User.findOne({ email });
@@ -75,7 +76,35 @@ export const signup = async (req, res, next) => {
     });
 
     await user.save();
-    console.log(`✅ User created successfully: ${email}`);
+    console.log(`✅ User created successfully: ${email}, userType in user object: ${user.userType}`);
+
+    // If user type is faculty, create a Faculty record
+    console.log(`📌 Checking if faculty creation needed: userType=${userType}, user.userType=${user.userType}`);
+    if (userType === 'faculty' || user.userType === 'faculty') {
+      try {
+        console.log(`📚 Creating Faculty record for user: ${user._id}`);
+        const faculty = new Faculty({
+          userId: user._id,
+          fullName,
+          email,
+          profileImage: user.profileImage || '',
+          designation: 'Faculty',
+          bio: 'Faculty member at AllCollegeEvents',
+          specializations: [],
+          yearsOfExperience: 0,
+          settings: {
+            acceptMentorRequests: true,
+          },
+        });
+        const savedFaculty = await faculty.save();
+        console.log(`✅ Faculty profile created: ${savedFaculty._id}`);
+      } catch (facultyError) {
+        console.warn(`⚠️  Could not create faculty profile: ${facultyError.message}`);
+        // Don't fail the signup if faculty profile creation fails
+      }
+    } else {
+      console.log(`✅ Not a faculty user, skipping Faculty creation`);
+    }
 
     sendTokenResponse(user, 201, res, 'Account created successfully! Welcome to AllCollegeEvents.');
   } catch (error) {

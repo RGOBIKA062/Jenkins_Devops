@@ -1,5 +1,6 @@
 import express from 'express';
 import {
+  getAllFaculty,
   getFacultyProfile,
   updateFacultyProfile,
   getFacultyEvents,
@@ -10,6 +11,7 @@ import {
   getFacultyStatistics,
   searchEvents,
   getFeaturedFaculty,
+  getFacultyWithMentorProfiles,
   getFacultyById,
   getEventRegistrations,
   markAttendance,
@@ -49,6 +51,12 @@ router.get('/statistics', authMiddleware, getFacultyStatistics);
  * PUBLIC ROUTES (No Authentication Required)
  * ================================================
  */
+
+// Get all faculty (for mentoring)
+router.get('/', getAllFaculty);
+
+// Get all faculty with mentor profiles enriched (best for complete data)
+router.get('/mentors/complete', getFacultyWithMentorProfiles);
 
 // Search and Discovery
 router.get('/search-events', searchEvents);

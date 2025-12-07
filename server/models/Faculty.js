@@ -37,9 +37,53 @@ const facultySchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    currentCompany: {
+      type: String,
+      default: '',
+    },
+    linkedinProfile: {
+      type: String,
+      default: '',
+    },
+    githubProfile: {
+      type: String,
+      default: '',
+    },
+    skills: {
+      type: [String],
+      default: [],
+    },
     avatar: {
       type: String,
       default: '',
+    },
+    profileImage: {
+      type: String,
+      default: '',
+    },
+    averageRating: {
+      type: Number,
+      default: 4.5,
+      min: 0,
+      max: 5,
+    },
+    totalReviews: {
+      type: Number,
+      default: 0,
+    },
+    settings: {
+      publicProfile: {
+        type: Boolean,
+        default: true,
+      },
+      acceptMentorRequests: {
+        type: Boolean,
+        default: true,
+      },
+      emailNotifications: {
+        type: Boolean,
+        default: true,
+      },
     },
     analytics: {
       totalEventsCreated: {

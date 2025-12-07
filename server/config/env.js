@@ -95,7 +95,7 @@ const envSchema = {
     value: parseInt(process.env.MAX_OUTPUT_SIZE) || 50000,
   },
   ALLOWED_LANGUAGES: {
-    value: (process.env.ALLOWED_LANGUAGES || 'javascript,python,java,cpp').split(','),
+    value: (process.env.ALLOWED_LANGUAGES || 'javascript,python,java,cpp,csharp').split(','),
   },
 
   // Logging Configuration

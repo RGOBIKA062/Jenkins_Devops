@@ -3,6 +3,7 @@ import MentorshipRequest from '../models/MentorshipRequest.js';
 import MentorshipSession from '../models/MentorshipSession.js';
 import MentorReview from '../models/MentorReview.js';
 import User from '../models/User.js';
+import Faculty from '../models/Faculty.js';
 import logger from '../utils/logger.js';
 
 /**
@@ -102,6 +103,33 @@ export const createOrUpdateMentorProfile = async (req, res) => {
     }
 
     await mentor.save();
+
+    // SYNC: Also update Faculty record with mentor profile data
+    // This ensures StudentDashboard can fetch all mentor info from Faculty collection
+    try {
+      const facultyUpdateData = {
+        yearsOfExperience,
+        currentCompany: currentCompany || '',
+        linkedinProfile: linkedinProfile || '',
+        githubProfile: githubProfile || '',
+        specializations: specializations || [],
+        // Convert mentor skills format (objects) to Faculty skills format (strings)
+        skills: skills && Array.isArray(skills) 
+          ? skills.map(s => typeof s === 'string' ? s : s.skillName)
+          : [],
+      };
+
+      await Faculty.findOneAndUpdate(
+        { userId },
+        facultyUpdateData,
+        { new: true }
+      );
+
+      logger.info(`Faculty record synced for mentor: ${userId}`);
+    } catch (facultyError) {
+      logger.warn(`Failed to sync Faculty record: ${facultyError.message}`);
+      // Don't fail the whole request if Faculty sync fails
+    }
 
     res.status(200).json({
       success: true,

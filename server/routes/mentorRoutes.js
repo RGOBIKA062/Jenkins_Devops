@@ -15,6 +15,13 @@ import {
   getMyRequests,
   cancelMentorshipRequest,
 } from '../controllers/mentorshipRequestController.js';
+import {
+  sendMentorRequest,
+  getMentorRequests,
+  acceptMentorRequest,
+  rejectMentorRequest,
+  getMyMentorRequests,
+} from '../controllers/mentorRequestFacultyController.js';
 import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -156,5 +163,52 @@ router.post('/request/:requestId/reject', authMiddleware, rejectMentorshipReques
  * @access  Private (Student or Mentor)
  */
 router.delete('/request/:requestId/cancel', authMiddleware, cancelMentorshipRequest);
+
+/**
+ * ==========================================
+ * FACULTY-BASED MENTOR REQUEST ROUTES
+ * ==========================================
+ * Professional mentoring system using Faculty
+ */
+
+/**
+ * @route   POST /api/mentors/faculty-request
+ * @desc    Send mentor request to faculty
+ * @access  Private (Students)
+ * @body    { mentorId, message, skills[], goals[] }
+ */
+router.post('/faculty-request', authMiddleware, sendMentorRequest);
+
+/**
+ * @route   GET /api/mentors/faculty-requests
+ * @desc    Get incoming mentor requests (for faculty)
+ * @access  Private (Faculty/Mentors)
+ * @query   status (pending|accepted|rejected)
+ */
+router.get('/faculty-requests', authMiddleware, getMentorRequests);
+
+/**
+ * @route   GET /api/mentors/my-requests
+ * @desc    Get student's mentor requests
+ * @access  Private (Students)
+ * @query   status
+ */
+router.get('/my-requests', authMiddleware, getMyMentorRequests);
+
+/**
+ * @route   PUT /api/mentors/faculty-request/:requestId/accept
+ * @desc    Accept mentor request
+ * @access  Private (Faculty/Mentors)
+ * @body    { message? }
+ */
+router.put('/faculty-request/:requestId/accept', authMiddleware, acceptMentorRequest);
+
+/**
+ * @route   PUT /api/mentors/faculty-request/:requestId/reject
+ * @desc    Reject mentor request
+ * @access  Private (Faculty/Mentors)
+ * @body    { reason? }
+ */
+router.put('/faculty-request/:requestId/reject', authMiddleware, rejectMentorRequest);
 
 export default router;

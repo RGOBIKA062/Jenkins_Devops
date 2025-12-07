@@ -533,23 +533,213 @@ export const searchEvents = async (req, res) => {
  * @route GET /api/faculty/featured
  * @access Public
  */
+/**
+ * Get All Faculty for Mentoring
+ * @route GET /api/faculty
+ * @access Public
+ * @description Returns all faculty with public profiles available for mentoring
+ */
+export const getAllFaculty = async (req, res) => {
+  try {
+    const faculty = await Faculty.find({ 'settings.publicProfile': true })
+      .select('userId fullName designation department bio profileImage avatar averageRating totalReviews yearsOfExperience email specializations settings currentCompany linkedinProfile githubProfile skills')
+      .lean();
+
+    // Transform data to ensure frontend compatibility with professional defaults
+    const transformedFaculty = faculty.map(f => ({
+      _id: f._id,
+      userId: f.userId,
+      fullName: f.fullName,
+      designation: f.designation,
+      department: f.department,
+      bio: f.bio || getDefaultBio(f.department, f.designation, f.fullName),
+      profileImage: f.profileImage || f.avatar || getProfessionalAvatar(f.fullName, f.designation),
+      averageRating: f.averageRating || 4.8,
+      totalReviews: f.totalReviews || 0,
+      yearsOfExperience: f.yearsOfExperience || 3,
+      email: f.email,
+      specializations: f.specializations || [],
+      currentCompany: f.currentCompany || 'Available for Mentoring',
+      linkedinProfile: f.linkedinProfile || '',
+      githubProfile: f.githubProfile || '',
+      skills: (f.skills && f.skills.length > 0) ? f.skills : getDefaultSkills(f.department),
+      settings: f.settings || {},
+    }));
+
+    res.status(200).json({
+      success: true,
+      data: transformedFaculty,
+      count: transformedFaculty.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching all faculty:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching faculty',
+      error: error.message,
+    });
+  }
+};
+
 export const getFeaturedFaculty = async (req, res) => {
   try {
     const faculty = await Faculty.find({ 'settings.publicProfile': true })
       .sort('-averageRating')
       .limit(10)
-      .select('fullName designation department bio profileImage averageRating analytics')
+      .select('userId fullName designation department bio profileImage avatar averageRating totalReviews yearsOfExperience email specializations currentCompany linkedinProfile githubProfile skills')
       .lean();
+
+    // Transform data to ensure frontend compatibility with professional defaults
+    const transformedFaculty = faculty.map(f => ({
+      _id: f._id,
+      userId: f.userId,
+      fullName: f.fullName,
+      designation: f.designation,
+      department: f.department,
+      bio: f.bio || getDefaultBio(f.department, f.designation, f.fullName),
+      profileImage: f.profileImage || f.avatar || getProfessionalAvatar(f.fullName, f.designation),
+      averageRating: f.averageRating || 4.8,
+      totalReviews: f.totalReviews || 0,
+      yearsOfExperience: f.yearsOfExperience || 3,
+      email: f.email,
+      specializations: f.specializations || [],
+      currentCompany: f.currentCompany || 'Available for Mentoring',
+      linkedinProfile: f.linkedinProfile || '',
+      githubProfile: f.githubProfile || '',
+      skills: (f.skills && f.skills.length > 0) ? f.skills : getDefaultSkills(f.department),
+    }));
 
     res.status(200).json({
       success: true,
-      data: faculty,
+      data: transformedFaculty,
+      count: transformedFaculty.length,
     });
   } catch (error) {
     logger.error('Error fetching featured faculty:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching featured faculty',
+      error: error.message,
+    });
+  }
+};
+
+/**
+ * Helper: Get letter avatar using first letter of name
+ */
+const getProfessionalAvatar = (fullName, designation) => {
+  if (!fullName || fullName.trim().length === 0) {
+    return 'A'; // Default letter if no name provided
+  }
+  
+  // Get first letter of the first name
+  const firstLetter = fullName.trim().charAt(0).toUpperCase();
+  return firstLetter;
+};
+
+/**
+ * Helper: Get default professional bio by department
+ */
+const getDefaultBio = (department, designation, fullName) => {
+  const bios = {
+    'Computer Science': `Experienced ${designation} with expertise in software development, web technologies, and modern architecture patterns.`,
+    'Information Technology': `Professional ${designation} specializing in IT solutions, cloud computing, and digital transformation.`,
+    'Engineering': `Skilled ${designation} with deep knowledge in system design, optimization, and engineering best practices.`,
+    'Data Science': `Accomplished ${designation} focused on data analytics, machine learning, and business intelligence.`,
+    'Business': `Business-minded ${designation} with expertise in strategy, operations, and organizational management.`,
+    'Design': `Creative ${designation} with experience in UI/UX design, user experience, and digital products.`,
+    'Default': `Passionate ${designation} committed to mentoring and sharing expertise with the next generation of professionals.`,
+  };
+  return bios[department] || bios['Default'];
+};
+
+/**
+ * Helper: Get default skills by department
+ */
+const getDefaultSkills = (department) => {
+  const skillsByDept = {
+    'Computer Science': ['Python', 'JavaScript', 'C++', 'Data Structures', 'Algorithms', 'System Design'],
+    'Information Technology': ['Cloud Computing', 'AWS', 'Azure', 'DevOps', 'Network Security', 'IT Infrastructure'],
+    'Engineering': ['CAD', 'System Design', 'Project Management', 'Technical Documentation', 'Problem Solving'],
+    'Data Science': ['Machine Learning', 'Python', 'SQL', 'Data Analysis', 'Tableau', 'Statistical Analysis'],
+    'Business': ['Business Strategy', 'Leadership', 'Project Management', 'Communication', 'Analytics'],
+    'Design': ['UI/UX Design', 'Figma', 'Prototyping', 'User Research', 'Design Systems'],
+  };
+  return skillsByDept[department] || [];
+};
+
+/**
+ * Get Faculty with Mentor Profile Enrichment
+ * @route GET /api/faculty/with-mentor-profiles
+ * @access Public
+ * @description Returns all faculty with their mentor profiles merged in
+ */
+export const getFacultyWithMentorProfiles = async (req, res) => {
+  try {
+    const Mentor = (await import('../models/Mentor.js')).default;
+    
+    // Fetch all public faculty
+    const faculty = await Faculty.find({ 'settings.publicProfile': true })
+      .select('userId fullName designation department bio profileImage avatar averageRating totalReviews yearsOfExperience email specializations currentCompany linkedinProfile githubProfile skills')
+      .lean();
+
+    // Fetch all mentor profiles
+    const mentors = await Mentor.find()
+      .select('userId yearsOfExperience currentCompany linkedinProfile githubProfile skills professionalBio')
+      .lean();
+
+    // Create a map for quick lookup by userId
+    const mentorMap = {};
+    mentors.forEach(mentor => {
+      if (mentor.userId) {
+        const userIdStr = mentor.userId.toString();
+        mentorMap[userIdStr] = mentor;
+      }
+    });
+
+    // Transform and enrich faculty data with professional defaults
+    const enrichedFaculty = faculty.map(f => {
+      const userIdStr = f.userId.toString();
+      const mentorProfile = mentorMap[userIdStr];
+
+      // Get professional defaults if not provided
+      const yearsExp = mentorProfile?.yearsOfExperience || f.yearsOfExperience || 3;
+      const bio = mentorProfile?.professionalBio || f.bio || getDefaultBio(f.department, f.designation, f.fullName);
+      const skills = mentorProfile?.skills 
+        ? mentorProfile.skills.map(s => typeof s === 'string' ? s : s.skillName)
+        : (f.skills && f.skills.length > 0 ? f.skills : getDefaultSkills(f.department));
+      const avatar = f.profileImage || f.avatar || getProfessionalAvatar(f.fullName, f.designation);
+
+      return {
+        _id: f._id,
+        userId: f.userId,
+        fullName: f.fullName,
+        designation: f.designation,
+        department: f.department,
+        bio: bio,
+        profileImage: avatar,
+        averageRating: f.averageRating || 4.8, // Professional default
+        totalReviews: f.totalReviews || 0,
+        yearsOfExperience: yearsExp,
+        email: f.email,
+        specializations: f.specializations || [],
+        currentCompany: mentorProfile?.currentCompany || f.currentCompany || 'Available for Mentoring',
+        linkedinProfile: mentorProfile?.linkedinProfile || f.linkedinProfile || '',
+        githubProfile: mentorProfile?.githubProfile || f.githubProfile || '',
+        skills: skills,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      data: enrichedFaculty,
+      count: enrichedFaculty.length,
+    });
+  } catch (error) {
+    logger.error('Error fetching faculty with mentor profiles:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching faculty',
       error: error.message,
     });
   }
@@ -566,7 +756,6 @@ export const getFacultyById = async (req, res) => {
 
     const faculty = await Faculty.findById(facultyId)
       .populate('userId', 'fullName email profileImage')
-      .select('-settings')
       .lean();
 
     if (!faculty) {
@@ -581,12 +770,26 @@ export const getFacultyById = async (req, res) => {
       .select('title category startDate registrations views averageRating')
       .lean();
 
+    // Transform data with proper field mapping
+    const transformedFaculty = {
+      _id: faculty._id,
+      fullName: faculty.fullName,
+      designation: faculty.designation,
+      department: faculty.department,
+      bio: faculty.bio,
+      profileImage: faculty.profileImage || faculty.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${faculty.fullName}`,
+      averageRating: faculty.averageRating || 4.5,
+      totalReviews: faculty.totalReviews || 0,
+      yearsOfExperience: faculty.yearsOfExperience || 0,
+      email: faculty.email,
+      specializations: faculty.specializations || [],
+      userId: faculty.userId,
+      events: events || [],
+    };
+
     res.status(200).json({
       success: true,
-      data: {
-        ...faculty,
-        events: events || [],
-      },
+      data: transformedFaculty,
     });
   } catch (error) {
     logger.error('Error fetching faculty:', error);
@@ -737,6 +940,7 @@ export const bulkMarkAttendance = async (req, res) => {
 export default {
   getFacultyProfile,
   updateFacultyProfile,
+  getAllFaculty,
   getFacultyEvents,
   getEventDetails,
   createEvent,
@@ -745,6 +949,7 @@ export default {
   getFacultyStatistics,
   searchEvents,
   getFeaturedFaculty,
+  getFacultyWithMentorProfiles,
   getFacultyById,
   getEventRegistrations,
   markAttendance,

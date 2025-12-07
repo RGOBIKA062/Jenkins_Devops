@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import Landing from "./pages/Landing";
 import Auth from "./pages/Auth";
 import StudentFeed from "./pages/StudentFeed";
+import StudentDashboard from "./pages/StudentDashboard";
 import OnlineCompilerPro from "./pages/OnlineCompilerPro";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FreelancerDashboard from "./pages/FreelancerDashboard";
@@ -26,7 +27,8 @@ function App() {
 					<Routes>
 					<Route path="/" element={<Landing />} />
 					<Route path="/auth" element={<Auth />} />
-					<Route path="/student" element={<StudentFeed />} />
+					<Route path="/student" element={<StudentDashboard />} />
+					<Route path="/student-feed" element={<StudentFeed />} />
 					<Route path="/create-event" element={<CreateEventPage />} />
 					<Route path="/compiler-pro" element={<OnlineCompilerPro />} />
 					<Route path="/faculty" element={<FacultyDashboard />} />
