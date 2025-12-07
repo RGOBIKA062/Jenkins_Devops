@@ -88,12 +88,20 @@ app.get('/health', (req, res) => {
 
 app.use('/api/auth', authRoutes);
 
+// Faculty routes - AllCollegeEvents Faculty Portal
+import facultyRoutes from './routes/facultyRoutes.js';
+app.use('/api/faculty', facultyRoutes);
+
 // Event routes
 import eventRoutes from './routes/eventRoutes.js';
 app.use('/api/events', eventRoutes);
 
 // Code Execution API (Production Grade)
 app.use('/api/execute', codeExecutionRoutes);
+
+// AI-Powered Routes (Extraordinary Features)
+import aiRoutes from './routes/aiRoutes.js';
+app.use('/api/ai', aiRoutes);
 
 /**
  * ==========================================
