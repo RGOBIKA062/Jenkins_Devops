@@ -99,6 +99,10 @@ app.use('/api/events', eventRoutes);
 // Code Execution API (Production Grade)
 app.use('/api/execute', codeExecutionRoutes);
 
+// Mentor & Mentorship Routes (Enterprise-Grade)
+import mentorRoutes from './routes/mentorRoutes.js';
+app.use('/api/mentors', mentorRoutes);
+
 // AI-Powered Routes (Extraordinary Features)
 import aiRoutes from './routes/aiRoutes.js';
 app.use('/api/ai', aiRoutes);

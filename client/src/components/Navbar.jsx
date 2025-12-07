@@ -96,6 +96,9 @@ const Navbar = () => {
                   <DropdownMenuItem onClick={() => navigate("/faculty")}>
                     Faculty Dashboard
                   </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate("/mentor-discovery")}>
+                    Find Mentors
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => navigate("/dashboard")}>
                     My Dashboard

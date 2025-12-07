@@ -5,6 +5,7 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -31,6 +32,8 @@ const FacultyDashboard = () => {
   const [eventParticipants, setEventParticipants] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [featuredFaculty, setFeaturedFaculty] = useState([]);
+  const [mentorProfile, setMentorProfile] = useState(null);
+  const [mentorStats, setMentorStats] = useState(null);
 
   // UI State
   const [loading, setLoading] = useState(true);
@@ -153,6 +156,44 @@ const FacultyDashboard = () => {
 
         if (eventsData.success) {
           setMyEvents(eventsData.data);
+        }
+
+        // Fetch mentor profile
+        try {
+          const mentorRes = await fetch('http://localhost:5000/api/mentors/profile/me', {
+            method: 'GET',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+          });
+          const mentorData = await mentorRes.json();
+
+          if (mentorData.success && mentorData.mentor) {
+            setMentorProfile(mentorData.mentor);
+          }
+        } catch (mentorError) {
+          // Mentor profile doesn't exist yet, which is fine
+          console.log('No mentor profile yet');
+        }
+
+        // Fetch mentor analytics/stats
+        try {
+          const statsRes = await fetch('http://localhost:5000/api/mentors/analytics', {
+            method: 'GET',
+            headers: { 
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            },
+          });
+          const statsData = await statsRes.json();
+
+          if (statsData.success) {
+            setMentorStats(statsData.data);
+          }
+        } catch (statsError) {
+          // Stats don't exist yet, which is fine
+          console.log('No mentor stats yet');
         }
       } catch (error) {
         console.error('Error fetching faculty data:', error);
@@ -585,11 +626,10 @@ const FacultyDashboard = () => {
 
         {/* Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid grid-cols-2 lg:grid-cols-5 w-full bg-white shadow-sm">
+          <TabsList className="grid grid-cols-2 lg:grid-cols-4 w-full bg-white shadow-sm">
             <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
             <TabsTrigger value="events">My Events</TabsTrigger>
-            <TabsTrigger value="participants">Participants</TabsTrigger>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="mentoring">Mentoring</TabsTrigger>
             <TabsTrigger value="featured">Featured</TabsTrigger>
           </TabsList>
 
@@ -694,105 +734,221 @@ const FacultyDashboard = () => {
             </motion.div>
           </TabsContent>
 
-          {/* Participants Tab */}
-          <TabsContent value="participants" className="mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {selectedEvent ? (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-xl font-bold text-gray-900">{selectedEvent.title} - Participants</h3>
-                    <Button
-                      variant="outline"
-                      onClick={() => setSelectedEvent(null)}
-                    >
-                      ← Back
-                    </Button>
-                  </div>
+          {/* Mentoring Tab */}
+          <TabsContent value="mentoring" className="mt-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              
+              {/* Show Mentor Profile if exists */}
+              {mentorProfile ? (
+                <>
+                  {/* Mentor Profile Header */}
+                  <Card className="p-8 bg-gradient-to-r from-indigo-500 to-blue-600 text-white border-0">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <h2 className="text-3xl font-bold mb-2">✅ Your Mentor Profile is Live!</h2>
+                        <p className="text-indigo-100 mb-4">Your profile is visible to students looking for mentors</p>
+                        <div className="flex gap-2 flex-wrap">
+                          <Badge className="bg-white text-indigo-600 font-bold">
+                            {mentorProfile.yearsOfExperience}+ Years
+                          </Badge>
+                          <Badge className="bg-white text-indigo-600 font-bold">
+                            {mentorProfile.skills?.length || 0} Skills
+                          </Badge>
+                          <Badge className="bg-white text-indigo-600 font-bold">
+                            Rating: {mentorProfile.averageRating?.toFixed(1) || 'N/A'}⭐
+                          </Badge>
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => navigate('/mentor-setup')}
+                        variant="outline"
+                        className="bg-white text-indigo-600 hover:bg-gray-100 border-white"
+                      >
+                        Edit Profile
+                      </Button>
+                    </div>
+                  </Card>
 
-                  {eventParticipants.length === 0 ? (
-                    <Card className="p-12 text-center bg-white border border-gray-200">
-                      <Users className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                      <p className="text-gray-600 font-medium">No participants yet</p>
-                    </Card>
-                  ) : (
-                    <Card className="bg-white border border-gray-200 overflow-hidden">
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
-                          <thead className="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                              <th className="px-6 py-3 text-left font-semibold text-gray-900">Name</th>
-                              <th className="px-6 py-3 text-left font-semibold text-gray-900">Email</th>
-                              <th className="px-6 py-3 text-left font-semibold text-gray-900">Institution</th>
-                              <th className="px-6 py-3 text-left font-semibold text-gray-900">Status</th>
-                              <th className="px-6 py-3 text-left font-semibold text-gray-900">Action</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {eventParticipants.map((p) => (
-                              <tr key={p.userId?._id} className="hover:bg-gray-50 transition">
-                                <td className="px-6 py-3 text-gray-900">{p.userId?.fullName}</td>
-                                <td className="px-6 py-3 text-gray-600">{p.userId?.email}</td>
-                                <td className="px-6 py-3 text-gray-600">{p.userId?.institution || 'N/A'}</td>
-                                <td className="px-6 py-3">
-                                  <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                                    p.status === 'Attended'
-                                      ? 'bg-green-100 text-green-800'
-                                      : 'bg-yellow-100 text-yellow-800'
-                                  }`}>
-                                    {p.status}
-                                  </span>
-                                </td>
-                                <td className="px-6 py-3">
-                                  <Button
-                                    size="sm"
-                                    variant={p.status === 'Attended' ? 'default' : 'outline'}
-                                    onClick={() => handleMarkAttendance(selectedEvent._id, p.userId._id, p.status)}
-                                  >
-                                    {p.status === 'Attended' ? '✓ Attended' : 'Mark Present'}
-                                  </Button>
-                                </td>
-                              </tr>
+                  {/* Mentor Profile Details */}
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* Main Profile Info */}
+                    <div className="lg:col-span-2">
+                      <Card className="p-8 bg-white border border-gray-200">
+                        <div className="mb-6">
+                          <h3 className="text-2xl font-bold text-gray-900 mb-2">{mentorProfile.professionalTitle}</h3>
+                          <p className="text-gray-600 mb-4">{mentorProfile.currentCompany && `at ${mentorProfile.currentCompany}`}</p>
+                          <p className="text-gray-700 mb-4">{mentorProfile.professionalBio}</p>
+                        </div>
+
+                        {/* Skills */}
+                        <div className="mb-6">
+                          <h4 className="font-bold text-gray-900 mb-3">🎯 Skills</h4>
+                          <div className="flex flex-wrap gap-2">
+                            {mentorProfile.skills?.map((skill, idx) => (
+                              <Badge key={idx} variant="secondary" className="bg-blue-100 text-blue-800">
+                                {typeof skill === 'string' ? skill : skill.skillName}
+                              </Badge>
                             ))}
-                          </tbody>
-                        </table>
+                          </div>
+                        </div>
+
+                        {/* Industries */}
+                        {mentorProfile.industries?.length > 0 && (
+                          <div className="mb-6">
+                            <h4 className="font-bold text-gray-900 mb-3">🏢 Industries</h4>
+                            <div className="flex flex-wrap gap-2">
+                              {mentorProfile.industries.map((industry, idx) => (
+                                <Badge key={idx} variant="outline" className="bg-purple-50 text-purple-800 border-purple-200">
+                                  {industry}
+                                </Badge>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Pricing Info */}
+                        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                          <h4 className="font-bold text-gray-900 mb-3">💰 Mentorship Model</h4>
+                          <p className="text-gray-700 font-semibold">
+                            {mentorProfile.pricingType === 'free' ? '🎁 Free Mentorship' : '💎 Paid Mentorship'}
+                          </p>
+                          {mentorProfile.pricingType === 'paid' && mentorProfile.mentorshipTypes?.oneOnOne?.ratePerHour && (
+                            <p className="text-gray-600 mt-2">
+                              ₹{mentorProfile.mentorshipTypes.oneOnOne.ratePerHour}/hour for 1-on-1 sessions
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Contact Links */}
+                        <div className="flex gap-3">
+                          {mentorProfile.linkedinProfile && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={mentorProfile.linkedinProfile} target="_blank" rel="noopener noreferrer">
+                                LinkedIn
+                              </a>
+                            </Button>
+                          )}
+                          {mentorProfile.githubProfile && (
+                            <Button variant="outline" size="sm" asChild>
+                              <a href={mentorProfile.githubProfile} target="_blank" rel="noopener noreferrer">
+                                GitHub
+                              </a>
+                            </Button>
+                          )}
+                        </div>
+                      </Card>
+                    </div>
+
+                    {/* Analytics Card */}
+                    <Card className="p-6 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200">
+                      <h3 className="font-bold text-gray-900 mb-4">📊 Your Stats</h3>
+                      <div className="space-y-4">
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Active Mentees</p>
+                          <p className="text-3xl font-bold text-indigo-600">{mentorStats?.activeMentees || 0}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Pending Requests</p>
+                          <p className="text-3xl font-bold text-purple-600">{mentorStats?.pendingRequests || 0}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Sessions Completed</p>
+                          <p className="text-3xl font-bold text-green-600">{mentorStats?.completedSessions || 0}</p>
+                        </div>
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Avg Rating</p>
+                          <p className="text-3xl font-bold text-yellow-600">
+                            {mentorStats?.averageRating?.toFixed(1) || 'N/A'}⭐
+                          </p>
+                        </div>
+                        <div className="bg-white rounded-lg p-4">
+                          <p className="text-xs text-gray-600 mb-1">Total Earnings</p>
+                          <p className="text-3xl font-bold text-green-700">₹{mentorStats?.totalEarnings || 0}</p>
+                        </div>
                       </div>
                     </Card>
-                  )}
-                </div>
-              ) : (
-                <Card className="p-12 text-center bg-white border border-gray-200">
-                  <Users className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <p className="text-gray-600 font-medium">Select an event from "My Events" tab to view participants</p>
-                </Card>
-              )}
-            </motion.div>
-          </TabsContent>
-
-          {/* Profile Tab */}
-          <TabsContent value="profile" className="mt-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              {facultyProfile && (
-                <Card className="p-8 bg-white border border-gray-200">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6">Faculty Profile</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Full Name</label>
-                      <div className="p-3 bg-gray-50 rounded-lg text-gray-900">{facultyProfile.fullName}</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Email</label>
-                      <div className="p-3 bg-gray-50 rounded-lg text-gray-900">{facultyProfile.email}</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Department</label>
-                      <div className="p-3 bg-gray-50 rounded-lg text-gray-900">{facultyProfile.department}</div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-gray-700 mb-2">Designation</label>
-                      <div className="p-3 bg-gray-50 rounded-lg text-gray-900">{facultyProfile.designation}</div>
-                    </div>
                   </div>
-                </Card>
+
+                  {/* Pending Requests Section */}
+                  <Card className="p-8 bg-white border border-gray-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">📥 Mentorship Requests ({mentorStats?.pendingRequests || 0})</h3>
+                    {mentorStats?.pendingRequests > 0 ? (
+                      <p className="text-gray-600">You have {mentorStats.pendingRequests} pending mentorship requests. View them on the mentor dashboard.</p>
+                    ) : (
+                      <p className="text-gray-600">No pending requests yet. When students request mentorship, they'll appear here.</p>
+                    )}
+                  </Card>
+                </>
+              ) : (
+                <>
+                  {/* Setup Mentor Profile Card - Show when no profile exists */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Card className="p-8 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 hover:shadow-lg transition">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">🚀 Become a Mentor</h3>
+                          <p className="text-gray-600 text-sm">Create your mentor profile and start mentoring students</p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-center py-8">
+                          <BookOpen className="w-12 h-12 text-indigo-600" />
+                        </div>
+                      </div>
+                      <Button 
+                        onClick={() => navigate('/mentor-setup')}
+                        className="w-full bg-indigo-600 hover:bg-indigo-700 text-white"
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Mentor Profile
+                      </Button>
+                    </Card>
+
+                    <Card className="p-8 bg-gradient-to-br from-green-50 to-emerald-50 border border-green-200 hover:shadow-lg transition">
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 mb-2">👥 My Mentees</h3>
+                          <p className="text-gray-600 text-sm">View and manage your mentorship relationships</p>
+                        </div>
+                      </div>
+                      <div className="bg-white rounded-lg p-4 mb-4">
+                        <div className="flex items-center justify-center py-8">
+                          <Users className="w-12 h-12 text-green-600" />
+                        </div>
+                      </div>
+                      <Button 
+                        variant="outline"
+                        className="w-full border-green-600 text-green-600 hover:bg-green-50"
+                        disabled
+                      >
+                        <Eye className="w-4 h-4 mr-2" />
+                        View Mentees (Coming Soon)
+                      </Button>
+                    </Card>
+                  </div>
+
+                  <Card className="p-8 bg-gradient-to-br from-indigo-50 to-blue-50 border border-indigo-200">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4">📚 Why Become a Mentor?</h3>
+                    <ul className="space-y-3">
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Help students achieve their career goals</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Earn additional income with flexible hours</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Build your professional reputation</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                        <span className="text-gray-700">Get featured on our platform leaderboard</span>
+                      </li>
+                    </ul>
+                  </Card>
+                </>
               )}
             </motion.div>
           </TabsContent>

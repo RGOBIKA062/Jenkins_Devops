@@ -14,6 +14,8 @@ import EventDetail from "./pages/EventDetailNew";
 import UserDashboard from "./pages/UserDashboard";
 import UserProfile from "./pages/UserProfile";
 import CreateEventPage from "./pages/CreateEventPage";
+import MentorDiscovery from "./pages/MentorDiscovery";
+import MentorProfileSetup from "./pages/MentorProfileSetup";
 import NotFound from "./pages/NotFound";
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
 					<Route path="/create-event" element={<CreateEventPage />} />
 					<Route path="/compiler-pro" element={<OnlineCompilerPro />} />
 					<Route path="/faculty" element={<FacultyDashboard />} />
+					<Route path="/mentor-discovery" element={<MentorDiscovery />} />
+					<Route path="/mentor-setup" element={<MentorProfileSetup />} />
 						<Route path="/freelancer" element={<FreelancerDashboard />} />
 						<Route path="/industry" element={<IndustryDashboard />} />
 						<Route path="/organizer" element={<OrganizerDashboard />} />
