@@ -2,10 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
 import dotenv from 'dotenv';
+import mongoose from 'mongoose';
 import connectDB from './config/database.js';
 import authRoutes from './routes/authRoutes.js';
-import { errorHandler } from './middleware/auth.js';
+import facultyRoutes from './routes/facultyRoutes.js';
+import eventRoutes from './routes/eventRoutes.js';
 import codeExecutionRoutes from './routes/codeExecutionRoutes.js';
+import mentorRoutes from './routes/mentorRoutes.js';
+import freelancerRoutes from './routes/freelancerRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
+import { errorHandler } from './middleware/auth.js';
 
 // Load environment variables
 dotenv.config();
@@ -60,11 +66,40 @@ app.use((req, res, next) => {
 
 /**
  * ==========================================
- * DATABASE CONNECTION
+ * DATABASE CONNECTION & INITIALIZATION
  * ==========================================
  */
 
 connectDB();
+
+// Initialize database collections and indexes
+async function initializeCollections() {
+  try {
+    const Freelancer = (await import('./models/Freelancer.js')).default;
+    const collections = await mongoose.connection.db.listCollections().toArray();
+    const freelancerCollectionExists = collections.some(col => col.name === 'freelancers');
+
+    if (!freelancerCollectionExists) {
+      console.log('📝 Creating freelancers collection with indexes...');
+      try {
+        await Freelancer.collection.createIndex({ userId: 1 });
+        await Freelancer.collection.createIndex({ 'profile.email': 1 }, { sparse: true });
+        console.log('✅ Freelancers collection initialized with indexes');
+      } catch (e) {
+        // Index errors are okay if collection exists
+      }
+    } else {
+      console.log('✅ Freelancers collection already exists with all required indexes');
+    }
+  } catch (error) {
+    if (!error.message.includes('An existing index')) {
+      console.error('❌ Error initializing collections:', error.message);
+    }
+  }
+}
+
+// Initialize after a delay to ensure MongoDB connection is ready
+setTimeout(initializeCollections, 1500);
 
 /**
  * ==========================================
@@ -87,24 +122,11 @@ app.get('/health', (req, res) => {
  */
 
 app.use('/api/auth', authRoutes);
-
-// Faculty routes - AllCollegeEvents Faculty Portal
-import facultyRoutes from './routes/facultyRoutes.js';
 app.use('/api/faculty', facultyRoutes);
-
-// Event routes
-import eventRoutes from './routes/eventRoutes.js';
 app.use('/api/events', eventRoutes);
-
-// Code Execution API (Production Grade)
 app.use('/api/execute', codeExecutionRoutes);
-
-// Mentor & Mentorship Routes (Enterprise-Grade)
-import mentorRoutes from './routes/mentorRoutes.js';
 app.use('/api/mentors', mentorRoutes);
-
-// AI-Powered Routes (Extraordinary Features)
-import aiRoutes from './routes/aiRoutes.js';
+app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/ai', aiRoutes);
 
 /**

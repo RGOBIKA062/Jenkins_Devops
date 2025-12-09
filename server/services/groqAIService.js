@@ -298,6 +298,177 @@ class GroqAIService {
       return { summary: 'Analysis complete', sentiment: 'neutral', key_points: [] };
     }
   }
+
+  /**
+   * Generate text content (Generic)
+   * Used for flexible AI prompts
+   */
+  static async generateText(prompt) {
+    try {
+      const response = await axios.post(
+        GROQ_API_URL,
+        {
+          model: 'mixtral-8x7b-32768',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 1500,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      return response.data.choices[0].message.content.trim();
+    } catch (error) {
+      console.error('Error generating text:', error);
+      return '[]'; // Return empty array as fallback
+    }
+  }
+
+  /**
+   * FREELANCER AI FEATURES
+   */
+
+  /**
+   * Generate AI job recommendations for freelancers
+   */
+  static async generateFreelancerJobRecommendations(skills) {
+    try {
+      const skillsList = Array.isArray(skills) ? skills.join(', ') : skills;
+
+      const response = await axios.post(
+        GROQ_API_URL,
+        {
+          model: 'mixtral-8x7b-32768',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are an expert recruiter. Based on freelancer skills, suggest 5 high-paying job opportunities. Return ONLY valid JSON array with objects containing: title, description, estimatedPay, difficulty, matchPercentage. Example: [{"title": "...", "description": "...", "estimatedPay": "₹50,000-₹100,000", "difficulty": "Medium", "matchPercentage": 95}]'
+            },
+            {
+              role: 'user',
+              content: `Freelancer skills: ${skillsList}. Suggest 5 job opportunities that would pay well. Return ONLY valid JSON array, no markdown, no explanation.`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const content = response.data.choices[0].message.content.trim();
+      // Extract JSON array from content
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error generating freelancer recommendations:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Generate skill improvement suggestions for freelancers
+   */
+  static async generateSkillBoostSuggestions(skills) {
+    try {
+      const skillsList = Array.isArray(skills) ? skills.join(', ') : skills;
+
+      const response = await axios.post(
+        GROQ_API_URL,
+        {
+          model: 'mixtral-8x7b-32768',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a career coach. Based on freelancer skills, suggest skill improvements. Return ONLY valid JSON with keys: newSkills (array of 3 skills to learn), courses (array of 3 course recommendations), workshops (array of 3 workshop recommendations). Example: {"newSkills": ["React Advanced", "..."], "courses": ["Course name", "..."], "workshops": ["Workshop name", "..."]}'
+            },
+            {
+              role: 'user',
+              content: `Freelancer current skills: ${skillsList}. What should they learn next to increase their market value? Return ONLY valid JSON, no markdown, no explanation.`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 600,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const content = response.data.choices[0].message.content.trim();
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return { newSkills: [], courses: [], workshops: [] };
+    } catch (error) {
+      console.error('Error generating skill boost suggestions:', error);
+      return { newSkills: [], courses: [], workshops: [] };
+    }
+  }
+
+  /**
+   * Generate portfolio project ideas
+   */
+  static async generatePortfolioProjectIdeas(skills) {
+    try {
+      const skillsList = Array.isArray(skills) ? skills.join(', ') : skills;
+
+      const response = await axios.post(
+        GROQ_API_URL,
+        {
+          model: 'mixtral-8x7b-32768',
+          messages: [
+            {
+              role: 'system',
+              content: 'You are a project mentor. Suggest portfolio projects. Return ONLY valid JSON array with objects: title, description, skills_used, difficulty, estimatedTime. Example: [{"title": "...", "description": "...", "skills_used": [...], "difficulty": "Intermediate", "estimatedTime": "2 weeks"}]'
+            },
+            {
+              role: 'user',
+              content: `Skills: ${skillsList}. Suggest 5 impressive portfolio project ideas. Return ONLY valid JSON array, no markdown.`
+            }
+          ],
+          temperature: 0.7,
+          max_tokens: 700,
+        },
+        {
+          headers: {
+            'Authorization': `Bearer ${GROQ_API_KEY}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      const content = response.data.choices[0].message.content.trim();
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      return [];
+    } catch (error) {
+      console.error('Error generating project ideas:', error);
+      return [];
+    }
+  }
 }
 
 export default GroqAIService;

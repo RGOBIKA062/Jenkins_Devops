@@ -8,7 +8,7 @@ import StudentFeed from "./pages/StudentFeed";
 import StudentDashboard from "./pages/StudentDashboard";
 import OnlineCompilerPro from "./pages/OnlineCompilerPro";
 import FacultyDashboard from "./pages/FacultyDashboard";
-import FreelancerDashboard from "./pages/FreelancerDashboard";
+import FreelancerPage from "./pages/FreelancerPage";
 import IndustryDashboard from "./pages/IndustryDashboard";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import EventDetail from "./pages/EventDetailNew";
@@ -34,13 +34,13 @@ function App() {
 					<Route path="/faculty" element={<FacultyDashboard />} />
 					<Route path="/mentor-discovery" element={<MentorDiscovery />} />
 					<Route path="/mentor-setup" element={<MentorProfileSetup />} />
-						<Route path="/freelancer" element={<FreelancerDashboard />} />
-						<Route path="/industry" element={<IndustryDashboard />} />
-						<Route path="/organizer" element={<OrganizerDashboard />} />
-						<Route path="/event/:id" element={<EventDetail />} />
-						<Route path="/dashboard" element={<UserDashboard />} />
-						<Route path="/profile" element={<UserProfile />} />
-						<Route path="*" element={<NotFound />} />
+					<Route path="/freelancer" element={<FreelancerPage />} />
+					<Route path="/industry" element={<IndustryDashboard />} />
+					<Route path="/organizer" element={<OrganizerDashboard />} />
+					<Route path="/event/:id" element={<EventDetail />} />
+					<Route path="/dashboard" element={<UserDashboard />} />
+					<Route path="/profile" element={<UserProfile />} />
+					<Route path="*" element={<NotFound />} />
 					</Routes>
 				</AuthProvider>
 			</BrowserRouter>
