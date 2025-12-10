@@ -11,6 +11,7 @@ import codeExecutionRoutes from './routes/codeExecutionRoutes.js';
 import mentorRoutes from './routes/mentorRoutes.js';
 import freelancerRoutes from './routes/freelancerRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
+import industryRoutes from './routes/industryRoutes.js';
 import { errorHandler } from './middleware/auth.js';
 
 // Load environment variables
@@ -128,6 +129,7 @@ app.use('/api/execute', codeExecutionRoutes);
 app.use('/api/mentors', mentorRoutes);
 app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/industry', industryRoutes);
 
 /**
  * ==========================================

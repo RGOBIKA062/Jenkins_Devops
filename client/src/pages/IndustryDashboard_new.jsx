@@ -21,50 +21,6 @@ import "./IndustryDashboard.css";
 
 const API_BASE = "http://localhost:5000/api/industry";
 
-// Get authentication token from localStorage or create test token for development
-const getAuthToken = async () => {
-  let token = localStorage.getItem("token");
-  
-  // Try alternative token keys
-  if (!token) {
-    token = localStorage.getItem("authToken");
-  }
-  if (!token) {
-    token = localStorage.getItem("jwt");
-  }
-  
-  // Development fallback: Create test user with token
-  if (!token) {
-    console.warn("⚠️ No token found. Creating test user for development...");
-    try {
-      // Register/login test user
-      const response = await fetch("http://localhost:5000/api/auth/signup", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: "Industry Test User",
-          email: "industry_test_" + Date.now() + "@test.com",
-          password: "TestPassword123!",
-          userType: "industry"
-        })
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        token = data.data?.token || data.token;
-        if (token) {
-          localStorage.setItem("token", token);
-          console.log("✅ Test user created and token saved");
-        }
-      }
-    } catch (err) {
-      console.error("Failed to create test user:", err);
-    }
-  }
-  
-  return token;
-};
-
 // Modal Component
 const Modal = ({ isOpen, title, children, onClose }) => {
   if (!isOpen) return null;
@@ -118,33 +74,22 @@ const JobOpeningForm = ({ onSubmit, onClose }) => {
     setError("");
 
     try {
-      const token = await getAuthToken();
-      
-      if (!token) {
-        setError("Authentication failed. Please log in.");
-        setLoading(false);
-        return;
-      }
-
       const payload = {
         ...formData,
         positions: parseInt(formData.positions),
-        skills: formData.skills.split(",").map((s) => s.trim()).filter(s => s),
+        skills: formData.skills.split(",").map((s) => s.trim()),
       };
 
       const response = await fetch(`${API_BASE}/job-openings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify(payload),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to post job");
-      }
+      if (!response.ok) throw new Error("Failed to post job");
 
       const result = await response.json();
       onSubmit(result.data);
@@ -339,30 +284,19 @@ const CampusVisitForm = ({ onSubmit, onClose }) => {
     setError("");
 
     try {
-      const token = await getAuthToken();
-      
-      if (!token) {
-        setError("Authentication failed. Please log in.");
-        setLoading(false);
-        return;
-      }
-
       const response = await fetch(`${API_BASE}/campus-visits`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
         body: JSON.stringify({
           ...formData,
-          expectedStudents: parseInt(formData.expectedStudents) || 0,
+          expectedStudents: parseInt(formData.expectedStudents),
         }),
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to schedule visit");
-      }
+      if (!response.ok) throw new Error("Failed to schedule visit");
 
       const result = await response.json();
       onSubmit(result.data);
@@ -541,19 +475,11 @@ const IndustryDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = await getAuthToken();
-        
-        if (!token) {
-          setError("Unable to authenticate. Please log in.");
-          setLoading(false);
-          return;
-        }
-
-        const headers = { Authorization: `Bearer ${token}` };
+        const token = localStorage.getItem("token");
 
         // Fetch stats
         const statsRes = await fetch(`${API_BASE}/stats`, {
-          headers,
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (statsRes.ok) {
           const statsData = await statsRes.json();
@@ -562,7 +488,7 @@ const IndustryDashboard = () => {
 
         // Fetch job openings
         const jobsRes = await fetch(`${API_BASE}/job-openings`, {
-          headers,
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (jobsRes.ok) {
           const jobsData = await jobsRes.json();
@@ -571,7 +497,7 @@ const IndustryDashboard = () => {
 
         // Fetch campus visits
         const visitsRes = await fetch(`${API_BASE}/campus-visits`, {
-          headers,
+          headers: { Authorization: `Bearer ${token}` },
         });
         if (visitsRes.ok) {
           const visitsData = await visitsRes.json();
@@ -843,261 +769,47 @@ const IndustryDashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             className="mb-8"
           >
-            <div className="mb-6">
-              <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl text-foreground mb-2 hover-glow-heading">
-                Posted Job Openings
-              </h2>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                Manage and showcase your company's current job opportunities
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            <h2 className="font-display font-bold text-xl sm:text-2xl text-foreground mb-4 sm:mb-6">
+              Posted Job Openings
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {jobs.map((job, index) => (
                 <motion.div
                   key={job._id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -8, shadow: "0 20px 40px rgba(0,0,0,0.15)" }}
                 >
-                  <Card className="p-6 sm:p-8 border-border rounded-3xl h-full hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white to-orange-50/30 border-2 border-primary/20">
-                    {/* Header with Status */}
-                    <div className="flex items-start justify-between gap-4 mb-6 pb-4 border-b border-primary/10">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg sm:text-xl lg:text-2xl text-foreground mb-2">
+                  <Card className="p-4 sm:p-6 border-border rounded-xl h-full hover:shadow-lg transition-shadow">
+                    <div className="flex items-start justify-between mb-3 gap-2">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-bold text-foreground text-sm sm:text-base truncate">
                           {job.title}
                         </h3>
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <span className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-blue-100 text-blue-700">
-                            {job.jobType || "Full-time"}
-                          </span>
-                          <span
-                            className={`px-3 py-1 text-xs sm:text-sm font-semibold rounded-full whitespace-nowrap ${
-                              job.status === "Open"
-                                ? "bg-green-100 text-green-700"
-                                : job.status === "Closed"
-                                ? "bg-red-100 text-red-700"
-                                : "bg-yellow-100 text-yellow-700"
-                            }`}
-                          >
-                            {job.status || "Open"}
-                          </span>
-                        </div>
+                        <p className="text-xs sm:text-sm text-muted-foreground">
+                          {job.positions} positions
+                        </p>
                       </div>
+                      <span className="px-2 py-1 text-xs rounded-full bg-primary/10 text-primary whitespace-nowrap">
+                        {job.jobType}
+                      </span>
                     </div>
-
-                    {/* Positions & Salary */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="p-4 bg-primary/5 rounded-2xl border border-primary/10">
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-1">Positions</p>
-                        <p className="text-xl sm:text-2xl font-bold text-primary">
-                          {job.positions || "N/A"}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-green-50 rounded-2xl border border-green-200">
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-1">Salary</p>
-                        <p className="text-lg sm:text-xl font-bold text-green-700">
-                          {job.salary || "Negotiable"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Description */}
-                    <div className="mb-6">
-                      <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                        Description
-                      </p>
-                      <p className="text-sm sm:text-base text-foreground line-clamp-3 leading-relaxed">
-                        {job.description || "No description provided"}
-                      </p>
-                    </div>
-
-                    {/* Experience Level */}
-                    {job.experience && (
-                      <div className="mb-6">
-                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                          Required Experience
-                        </p>
-                        <p className="text-sm sm:text-base text-foreground bg-amber-50 px-4 py-2 rounded-xl border border-amber-200">
-                          {job.experience}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Skills Section */}
-                    {job.skills && job.skills.length > 0 && (
-                      <div className="mb-6">
-                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-3">
-                          Required Skills
-                        </p>
-                        <div className="flex flex-wrap gap-2">
-                          {job.skills.map((skill, skillIndex) => (
-                            <motion.span
-                              key={skillIndex}
-                              initial={{ opacity: 0, scale: 0.8 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{ delay: skillIndex * 0.05 }}
-                              className="px-3 py-2 text-xs sm:text-sm font-semibold rounded-lg bg-gradient-to-r from-primary/20 to-primary/10 text-primary border border-primary/30 hover:border-primary/50 transition-all cursor-default"
-                            >
-                              {skill}
-                            </motion.span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Deadline if present */}
-                    {job.deadline && (
-                      <div className="mb-6 p-4 bg-red-50 rounded-2xl border border-red-200">
-                        <p className="text-xs text-muted-foreground mb-1">Application Deadline</p>
-                        <p className="text-sm font-semibold text-red-700">
-                          {new Date(job.deadline).toLocaleDateString("en-US", {
-                            year: "numeric",
-                            month: "long",
-                            day: "numeric",
-                          })}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Footer - Applications Count */}
-                    <div className="pt-4 border-t border-primary/10">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          {job.applications?.length || 0} applications
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                          <span className="text-xs font-medium text-green-700">Active</span>
-                        </div>
-                      </div>
-                    </div>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-
-        {/* Campus Drives Section */}
-        {campusVisits.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="mb-8"
-          >
-            <div className="mb-6">
-              <h2 className="font-display font-bold text-2xl sm:text-3xl lg:text-4xl text-foreground mb-2 hover-glow-heading">
-                Scheduled Campus Drives
-              </h2>
-              <p className="text-muted-foreground text-sm sm:text-base">
-                All your upcoming campus recruitment drives and events
-              </p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-              {campusVisits.map((drive, index) => (
-                <motion.div
-                  key={drive._id}
-                  initial={{ opacity: 0, y: 20, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ delay: index * 0.1 }}
-                  whileHover={{ y: -8, shadow: "0 20px 40px rgba(0,0,0,0.15)" }}
-                >
-                  <Card className="p-6 sm:p-8 border-border rounded-3xl h-full hover:shadow-2xl transition-all duration-300 bg-gradient-to-br from-white to-blue-50/30 border-2 border-blue-200">
-                    {/* Header with Purpose */}
-                    <div className="flex items-start justify-between gap-4 mb-6 pb-4 border-b border-blue-200">
-                      <div className="flex-1">
-                        <h3 className="font-bold text-lg sm:text-xl lg:text-2xl text-foreground mb-2">
-                          {drive.college}
-                        </h3>
-                        <div className="flex flex-wrap gap-2 items-center">
-                          <span className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-purple-100 text-purple-700">
-                            {drive.purpose || "Recruitment"}
-                          </span>
-                          <span className="px-3 py-1 text-xs sm:text-sm font-semibold rounded-full bg-blue-100 text-blue-700">
-                            {drive.status || "Scheduled"}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Date & Time Grid */}
-                    <div className="grid grid-cols-2 gap-4 mb-6">
-                      <div className="p-4 bg-orange-50 rounded-2xl border border-orange-200">
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-1">Date</p>
-                        <p className="text-sm sm:text-base font-bold text-orange-700">
-                          {new Date(drive.date).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric",
-                          })}
-                        </p>
-                      </div>
-                      <div className="p-4 bg-cyan-50 rounded-2xl border border-cyan-200">
-                        <p className="text-xs sm:text-sm text-muted-foreground mb-1">Time</p>
-                        <p className="text-sm sm:text-base font-bold text-cyan-700">
-                          {drive.time || "TBD"}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Location */}
-                    <div className="mb-6">
-                      <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                        Location
-                      </p>
-                      <p className="text-sm sm:text-base text-foreground bg-green-50 px-4 py-3 rounded-xl border border-green-200">
-                        📍 {drive.location || "To be announced"}
-                      </p>
-                    </div>
-
-                    {/* Expected Students */}
-                    {drive.expectedStudents && (
-                      <div className="mb-6">
-                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                          Expected Participants
-                        </p>
-                        <p className="text-lg sm:text-xl font-bold text-blue-600 bg-blue-50 px-4 py-3 rounded-xl border border-blue-200 text-center">
-                          👥 {drive.expectedStudents} Students
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Interview Process */}
-                    {drive.interviewProcess && (
-                      <div className="mb-6">
-                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                          Interview Process
-                        </p>
-                        <p className="text-sm sm:text-base text-foreground bg-indigo-50 px-4 py-3 rounded-xl border border-indigo-200 line-clamp-4 leading-relaxed">
-                          {drive.interviewProcess}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Recruitment Team */}
-                    {drive.recruitmentTeam && (
-                      <div className="mb-6">
-                        <p className="text-xs sm:text-sm font-semibold text-muted-foreground mb-2">
-                          Recruitment Team
-                        </p>
-                        <p className="text-sm sm:text-base text-foreground bg-rose-50 px-4 py-3 rounded-xl border border-rose-200">
-                          {drive.recruitmentTeam}
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Footer - Registered Count */}
-                    <div className="pt-4 border-t border-blue-200">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          {drive.registeredStudents?.length || 0} registered
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-                          <span className="text-xs font-medium text-blue-700">Upcoming</span>
-                        </div>
-                      </div>
+                    <p className="text-xs sm:text-sm text-muted-foreground line-clamp-2 mb-4">
+                      {job.description}
+                    </p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs sm:text-sm font-semibold text-foreground truncate">
+                        {job.salary || "Negotiable"}
+                      </span>
+                      <span
+                        className={`text-xs px-2 py-1 rounded-full whitespace-nowrap ${
+                          job.status === "Open"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-700"
+                        }`}
+                      >
+                        {job.status}
+                      </span>
                     </div>
                   </Card>
                 </motion.div>
