@@ -59,6 +59,25 @@ const userSchema = new mongoose.Schema(
       default: null,
       match: [/^[\d\s\-\+\(\)]+$/, 'Please provide a valid phone number'],
     },
+    notifications: [
+      {
+        type: {
+          type: String,
+          enum: ['info', 'hiring', 'system', 'message'],
+          default: 'info',
+        },
+        message: String,
+        data: mongoose.Schema.Types.Mixed,
+        read: {
+          type: Boolean,
+          default: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
     institution: {
       type: String,
       default: null,

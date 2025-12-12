@@ -9,6 +9,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import JobListings from '@/components/JobListings';
+import MyApplications from '@/components/MyApplications';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -142,7 +144,7 @@ const FreelancerPage = () => {
   const API_BASE = 'http://localhost:5000/api/freelancer';
 
   const getAuthToken = () => {
-    return localStorage.getItem('token');
+    return localStorage.getItem('authToken') || localStorage.getItem('token');
   };
 
   // Calculate profile completeness
@@ -715,7 +717,7 @@ const FreelancerPage = () => {
 
         {/* Tabs Section */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-1 md:grid-cols-6 gap-2 bg-white p-1 rounded-lg border border-gray-200">
+          <TabsList className="grid w-full grid-cols-1 md:grid-cols-7 gap-2 bg-white p-1 rounded-lg border border-gray-200">
             <TabsTrigger value="overview" className="data-[state=active]:bg-blue-600">
               Overview
             </TabsTrigger>
@@ -733,6 +735,9 @@ const FreelancerPage = () => {
             </TabsTrigger>
             <TabsTrigger value="ai" className="data-[state=active]:bg-blue-600">
               AI Hub
+            </TabsTrigger>
+            <TabsTrigger value="jobs" className="data-[state=active]:bg-blue-600">
+              💼 Jobs
             </TabsTrigger>
           </TabsList>
 
@@ -804,6 +809,33 @@ const FreelancerPage = () => {
               loading={loadingAI}
               onGetRecommendations={handleGetAIRecommendations}
             />
+          </TabsContent>
+
+          {/* Jobs Tab */}
+          <TabsContent value="jobs" className="mt-8">
+            <div className="space-y-8">
+              {/* Jobs Container */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900">Available Job Openings</h3>
+                  <p className="text-sm text-gray-600 mt-1">Browse and apply for jobs posted by industry professionals</p>
+                </div>
+                <div className="p-6">
+                  <JobListings userType="freelancer" />
+                </div>
+              </div>
+
+              {/* My Applications Container */}
+              <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-indigo-50 to-indigo-100 px-6 py-4 border-b border-gray-200">
+                  <h3 className="text-lg font-bold text-gray-900">My Applications</h3>
+                  <p className="text-sm text-gray-600 mt-1">Track all your job applications and their status</p>
+                </div>
+                <div className="p-6">
+                  <MyApplications userType="freelancer" />
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </main>

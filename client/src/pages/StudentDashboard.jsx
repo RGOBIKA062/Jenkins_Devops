@@ -5,6 +5,8 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import EventCard from '@/components/EventCard';
 import FiltersBar from '@/components/FiltersBar';
+import JobListings from '@/components/JobListings';
+import MyApplications from '@/components/MyApplications';
 import Editor from '@monaco-editor/react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -216,7 +218,7 @@ const StudentDashboard = () => {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${localStorage.getItem('token') || ''}`,
+            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`,
           },
         });
 
@@ -1100,10 +1102,10 @@ const StudentDashboard = () => {
               📬 My Requests ({mentorRequests.length})
             </TabsTrigger>
             <TabsTrigger
-              value="compiler"
+              value="jobs"
               className="data-[state=active]:bg-orange-500 data-[state=active]:text-white"
             >
-              💻 Compiler
+              💼 Jobs
             </TabsTrigger>
           </TabsList>
 
@@ -1287,6 +1289,32 @@ const StudentDashboard = () => {
 
           <TabsContent value="compiler" className="mt-0">
             {renderCompilerTab()}
+          </TabsContent>
+
+          <TabsContent value="jobs" className="mt-0">
+            <div className="space-y-8">
+              {/* Jobs Container */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-orange-50 to-orange-100 px-6 py-4 border-b border-slate-200">
+                  <h3 className="text-lg font-bold text-slate-900">Available Job Openings</h3>
+                  <p className="text-sm text-slate-600 mt-1">Browse and apply for jobs posted by industry professionals</p>
+                </div>
+                <div className="p-6">
+                  <JobListings userType="student" />
+                </div>
+              </div>
+
+              {/* My Applications Container */}
+              <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-blue-50 to-blue-100 px-6 py-4 border-b border-slate-200">
+                  <h3 className="text-lg font-bold text-slate-900">My Applications</h3>
+                  <p className="text-sm text-slate-600 mt-1">Track all your job applications and their status</p>
+                </div>
+                <div className="p-6">
+                  <MyApplications userType="student" />
+                </div>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>

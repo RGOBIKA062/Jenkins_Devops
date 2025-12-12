@@ -9,7 +9,7 @@ import StudentDashboard from "./pages/StudentDashboard";
 import OnlineCompilerPro from "./pages/OnlineCompilerPro";
 import FacultyDashboard from "./pages/FacultyDashboard";
 import FreelancerPage from "./pages/FreelancerPage";
-import IndustryDashboard from "./pages/IndustryDashboard";
+import AdvancedIndustryPage from "./pages/AdvancedIndustryPage";
 import OrganizerDashboard from "./pages/OrganizerDashboard";
 import EventDetail from "./pages/EventDetailNew";
 import UserDashboard from "./pages/UserDashboard";
@@ -35,7 +35,7 @@ function App() {
 					<Route path="/mentor-discovery" element={<MentorDiscovery />} />
 					<Route path="/mentor-setup" element={<MentorProfileSetup />} />
 					<Route path="/freelancer" element={<FreelancerPage />} />
-					<Route path="/industry" element={<IndustryDashboard />} />
+					<Route path="/industry" element={<AdvancedIndustryPage />} />
 					<Route path="/organizer" element={<OrganizerDashboard />} />
 					<Route path="/event/:id" element={<EventDetail />} />
 					<Route path="/dashboard" element={<UserDashboard />} />

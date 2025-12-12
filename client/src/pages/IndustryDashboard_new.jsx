@@ -84,7 +84,7 @@ const JobOpeningForm = ({ onSubmit, onClose }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
         body: JSON.stringify(payload),
       });
@@ -288,7 +288,7 @@ const CampusVisitForm = ({ onSubmit, onClose }) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          Authorization: `Bearer ${localStorage.getItem("authToken")}`,
         },
         body: JSON.stringify({
           ...formData,
@@ -475,7 +475,7 @@ const IndustryDashboard = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
+        const token = localStorage.getItem("authToken");
 
         // Fetch stats
         const statsRes = await fetch(`${API_BASE}/stats`, {

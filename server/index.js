@@ -12,6 +12,7 @@ import mentorRoutes from './routes/mentorRoutes.js';
 import freelancerRoutes from './routes/freelancerRoutes.js';
 import aiRoutes from './routes/aiRoutes.js';
 import industryRoutes from './routes/industryRoutes.js';
+import jobAndDriveRoutes from './routes/jobAndDriveRoutes.js';
 import { errorHandler } from './middleware/auth.js';
 
 // Load environment variables
@@ -130,6 +131,7 @@ app.use('/api/mentors', mentorRoutes);
 app.use('/api/freelancer', freelancerRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/industry', industryRoutes);
+app.use('/api', jobAndDriveRoutes);
 
 /**
  * ==========================================
@@ -166,24 +168,36 @@ const server = app.listen(PORT, () => {
 ║   🚀 Port: ${PORT}                        ║
 ║   🌍 Environment: ${process.env.NODE_ENV || 'development'}         ║
 ║   📦 MongoDB: Connected                ║
+║   🔗 Address: http://127.0.0.1:${PORT}                  ║
 ╚════════════════════════════════════════╝
   `);
+  console.log('✅ Server is now listening for incoming requests...');
+  console.log(`🔗 Test endpoint: http://localhost:${PORT}/health`);
+});
+
+server.on('error', (err) => {
+  console.error('❌ Server error:', err);
+  process.exit(1);
+});
+
+server.on('close', () => {
+  console.log('⚠️  Server closed');
 });
 
 /**
  * Handle unhandled promise rejections
  */
 process.on('unhandledRejection', (err) => {
-  console.error(`❌ Unhandled Rejection: ${err.message}`);
-  server.close(() => process.exit(1));
+  console.error(`❌ Unhandled Rejection: ${err?.message || err}`);
+  // Don't immediately exit - log and continue
 });
 
 /**
  * Handle uncaught exceptions
  */
 process.on('uncaughtException', (err) => {
-  console.error(`❌ Uncaught Exception: ${err.message}`);
-  process.exit(1);
+  console.error(`❌ Uncaught Exception: ${err?.message || err}`);
+  // Don't immediately exit - log and continue
 });
 
 /**

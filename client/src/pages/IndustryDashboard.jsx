@@ -20,6 +20,7 @@ import EventCard from "@/components/EventCard";
 import "./IndustryDashboard.css";
 
 const API_BASE = "http://localhost:5000/api/industry";
+const SERVER_API = "http://localhost:5000/api"; // general server API for jobs/applications
 
 // Get authentication token from localStorage or create test token for development
 const getAuthToken = async () => {
@@ -53,7 +54,7 @@ const getAuthToken = async () => {
         const data = await response.json();
         token = data.data?.token || data.token;
         if (token) {
-          localStorage.setItem("token", token);
+          localStorage.setItem("authToken", token);
           console.log("✅ Test user created and token saved");
         }
       }
@@ -536,6 +537,79 @@ const IndustryDashboard = () => {
     campusVisit: false,
   });
 
+  // Applications modal state
+  const [selectedJobForApps, setSelectedJobForApps] = useState(null);
+  const [showApplicationsModal, setShowApplicationsModal] = useState(false);
+  const [jobApplications, setJobApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(false);
+
+  const openApplicationsModal = async (job) => {
+    setSelectedJobForApps(job);
+    setShowApplicationsModal(true);
+    await fetchApplications(job._id);
+  };
+
+  const fetchApplications = async (jobId) => {
+    setAppsLoading(true);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`${SERVER_API}/jobs/${jobId}/applications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setJobApplications(data.data.applications || []);
+      } else {
+        setJobApplications([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch applications', err);
+      setJobApplications([]);
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  const handleUpdateApplicationStatus = async (applicationId, newStatus) => {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`${SERVER_API}/jobs/applications/${applicationId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchApplications(selectedJobForApps._id);
+      } else {
+        alert('Failed to update status: ' + data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating status');
+    }
+  };
+
+  const handleMarkHired = async (applicationId, hired) => {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch(`${SERVER_API}/jobs/applications/${applicationId}/hire`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ hired, notes: hired ? 'Marked hired' : 'Marked not hired' }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchApplications(selectedJobForApps._id);
+      } else {
+        alert('Failed to update hire status: ' + data.message);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error updating hire status');
+    }
+  };
+
   // Fetch dashboard data
   useEffect(() => {
     const fetchData = async () => {
@@ -963,14 +1037,18 @@ const IndustryDashboard = () => {
                     {/* Footer - Applications Count */}
                     <div className="pt-4 border-t border-primary/10">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs sm:text-sm text-muted-foreground">
-                          {job.applications?.length || 0} applications
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
-                          <span className="text-xs font-medium text-green-700">Active</span>
+                          <span className="text-xs sm:text-sm text-muted-foreground">
+                            {job.applications?.length || 0} applications
+                          </span>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => openApplicationsModal(job)}
+                              className="text-sm text-orange-600 hover:text-orange-700 font-semibold flex items-center gap-2"
+                            >
+                              View applications
+                            </button>
+                          </div>
                         </div>
-                      </div>
                     </div>
                   </Card>
                 </motion.div>
@@ -1105,6 +1183,48 @@ const IndustryDashboard = () => {
             </div>
           </motion.div>
         )}
+
+        {/* Applications Modal (Industry) */}
+        <Modal
+          isOpen={showApplicationsModal}
+          title={selectedJobForApps ? `Applications for "${selectedJobForApps.title}"` : 'Applications'}
+          onClose={() => setShowApplicationsModal(false)}
+        >
+          <div>
+            {appsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader className="w-8 h-8 animate-spin text-primary" />
+              </div>
+            ) : jobApplications.length === 0 ? (
+              <p className="text-sm text-gray-600">No applications found.</p>
+            ) : (
+              <div className="space-y-4">
+                {jobApplications.map((app) => (
+                  <div key={app._id} className="bg-white rounded-lg border p-4 flex items-center justify-between">
+                    <div>
+                      <p className="font-semibold text-gray-900">{app.applicantInfo?.name || app.applicantName || 'Applicant'}</p>
+                      <p className="text-xs text-gray-500">{app.applicantInfo?.email || app.email}</p>
+                      <p className="text-xs text-gray-500">Applied: {new Date(app.appliedAt).toLocaleDateString()}</p>
+                      <div className="mt-2">
+                        <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-700">{app.status}</span>
+                        {app.hired && <span className="ml-2 px-2 py-1 text-xs rounded-full bg-emerald-50 text-emerald-700">Hired</span>}
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => handleUpdateApplicationStatus(app._id, 'Accepted')} className="px-3 py-2 bg-green-600 text-white rounded-lg text-sm">Accept</button>
+                      <button onClick={() => handleUpdateApplicationStatus(app._id, 'Rejected')} className="px-3 py-2 bg-red-600 text-white rounded-lg text-sm">Reject</button>
+                      {app.hired ? (
+                        <button onClick={() => handleMarkHired(app._id, false)} className="px-3 py-2 bg-gray-700 text-white rounded-lg text-sm">Unhire</button>
+                      ) : (
+                        <button onClick={() => handleMarkHired(app._id, true)} className="px-3 py-2 bg-emerald-600 text-white rounded-lg text-sm">Mark Hired</button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal>
       </main>
 
       {/* Modals */}
