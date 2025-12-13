@@ -937,3 +937,325 @@ export const getAllFreelancers = async (req, res) => {
     });
   }
 };
+
+/**
+ * ==========================================
+ * ADVANCED AI JOB RECOMMENDATIONS
+ * City & Role-Based Job Finder
+ * ==========================================
+ */
+
+/**
+ * Get Job Recommendations by City
+ * POST /api/freelancer/recommendations/by-city
+ * 
+ * EXTRAORDINARY IMPLEMENTATION:
+ * Filters jobs by city and role with skill matching
+ */
+export const getJobRecommendationsByCity = async (req, res) => {
+  try {
+    const { city, role, userId } = req.body;
+    const requestUserId = userId || req.user?.userId || req.query?.userId;
+
+    // Validation
+    if (!city?.trim() || !role?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'City and role are required',
+        code: 'MISSING_FILTERS',
+      });
+    }
+
+    logger.info(`🔍 Job recommendations requested - City: ${city}, Role: ${role}`);
+
+    // Get freelancer profile for skills
+    let skills = [];
+    if (requestUserId) {
+      const freelancer = await Freelancer.findOne({ userId: requestUserId });
+      if (freelancer?.skills?.length > 0) {
+        skills = freelancer.skills.map(s => s.name).filter(Boolean);
+      }
+    }
+
+    if (skills.length === 0) {
+      logger.warn(`⚠️ No skills found. Using default skill matching.`);
+      skills = ['Web Development', 'Problem Solving', 'Communication'];
+    }
+
+    logger.info(`🛠️ Skills for matching: ${skills.join(', ')}`);
+
+    // Generate recommendations from Groq AI
+    const recommendations = await GroqAIService.generateJobRecommendationsByCity(
+      city,
+      role,
+      skills
+    );
+
+    if (!Array.isArray(recommendations)) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate recommendations',
+        code: 'AI_GENERATION_FAILED',
+      });
+    }
+
+    logger.info(`✨ Generated ${recommendations.length} job recommendations`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        recommendations,
+        filters: { city, role, skillsMatched: skills.length },
+        totalResults: recommendations.length,
+        timestamp: new Date().toISOString(),
+      },
+      message: `Found ${recommendations.length} job opportunities in ${city} for ${role} role`,
+    });
+  } catch (error) {
+    logger.error(`❌ Error in getJobRecommendationsByCity: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating job recommendations',
+      code: 'SERVER_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Get Job Recommendations by Role
+ * POST /api/freelancer/recommendations/by-role
+ * 
+ * Specialized role-based job recommendations
+ */
+export const getJobRecommendationsByRole = async (req, res) => {
+  try {
+    const { role, city, userId } = req.body;
+    const requestUserId = userId || req.user?.userId || req.query?.userId;
+
+    if (!role?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Role is required',
+        code: 'MISSING_ROLE',
+      });
+    }
+
+    logger.info(`💼 Role-based recommendations requested - Role: ${role}${city ? `, City: ${city}` : ''}`);
+
+    // Get freelancer skills
+    let skills = [];
+    if (requestUserId) {
+      const freelancer = await Freelancer.findOne({ userId: requestUserId });
+      if (freelancer?.skills?.length > 0) {
+        skills = freelancer.skills.map(s => s.name).filter(Boolean);
+      }
+    }
+
+    if (skills.length === 0) {
+      skills = ['Problem Solving', 'Technical Skills', 'Communication'];
+    }
+
+    logger.info(`🎯 Generating ${role} positions with ${skills.length} matched skills`);
+
+    const recommendations = await GroqAIService.generateJobRecommendationsByRole(
+      role,
+      skills,
+      city || null
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        recommendations,
+        roleQueried: role,
+        cityFilter: city || 'All',
+        totalRecommendations: recommendations.length,
+      },
+      message: `Found ${recommendations.length} ${role} opportunities${city ? ` in ${city}` : ''}`,
+    });
+  } catch (error) {
+    logger.error(`❌ Error in getJobRecommendationsByRole: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating role-based recommendations',
+      code: 'SERVER_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * Get Comprehensive Job Recommendations
+ * POST /api/freelancer/recommendations/comprehensive
+ * 
+ * MOST ACCURATE: City + Role + Skills + Experience + Salary + Employment Type
+ * Uses all filters for maximum accuracy
+ */
+export const getComprehensiveJobRecommendations = async (req, res) => {
+  try {
+    const {
+      city,
+      role,
+      userId,
+      experience,
+      salaryRange,
+      employmentType = 'All',
+    } = req.body;
+
+    const requestUserId = userId || req.user?.userId || req.query?.userId;
+
+    // Validation
+    if (!city?.trim() || !role?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'City and role are required for comprehensive recommendations',
+        code: 'MISSING_REQUIRED_FILTERS',
+      });
+    }
+
+    logger.info(`🚀 COMPREHENSIVE job recommendations requested`);
+    logger.info(`📍 Filters: City=${city}, Role=${role}, Experience=${experience}, Salary=${salaryRange}`);
+
+    // Get freelancer profile and skills
+    let skills = [];
+    let freelancerData = null;
+
+    if (requestUserId) {
+      const freelancer = await Freelancer.findOne({ userId: requestUserId });
+      if (freelancer) {
+        freelancerData = freelancer;
+        if (freelancer.skills?.length > 0) {
+          skills = freelancer.skills.map(s => s.name).filter(Boolean);
+        }
+      }
+    }
+
+    if (skills.length === 0) {
+      logger.warn('⚠️ No skills in profile. Using generic skills.');
+      skills = ['Web Development', 'Database Design', 'API Development', 'Problem Solving'];
+    }
+
+    logger.info(`✅ Skills loaded: ${skills.join(', ')}`);
+
+    // Prepare comprehensive filter params
+    const filterParams = {
+      city: city.trim(),
+      role: role.trim(),
+      skills,
+      experience: experience ? parseInt(experience) : null,
+      salaryRange: salaryRange || null,
+      employmentType: employmentType || 'All',
+    };
+
+    logger.info(`🤖 Calling Groq AI for comprehensive analysis...`);
+
+    // Generate comprehensive recommendations
+    const recommendations = await GroqAIService.generateComprehensiveJobRecommendations(
+      filterParams
+    );
+
+    if (!Array.isArray(recommendations)) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to generate comprehensive recommendations',
+        code: 'AI_GENERATION_FAILED',
+      });
+    }
+
+    logger.info(`✨ Generated ${recommendations.length} comprehensive recommendations`);
+
+    res.status(200).json({
+      success: true,
+      data: {
+        recommendations,
+        appliedFilters: {
+          city,
+          role,
+          skillsMatched: skills.length,
+          experience: experience || 'Not specified',
+          salaryRange: salaryRange || 'Not specified',
+          employmentType,
+        },
+        totalRecommendations: recommendations.length,
+        freelancerProfile: freelancerData ? {
+          name: freelancerData.profile?.firstName,
+          skills: skills.length,
+          verified: freelancerData.verified || false,
+        } : null,
+        timestamp: new Date().toISOString(),
+        generatedAt: new Date().toISOString(),
+      },
+      message: `🎯 Found ${recommendations.length} PERFECT matches in ${city} for ${role} role!`,
+    });
+  } catch (error) {
+    logger.error(`❌ CRITICAL ERROR in getComprehensiveJobRecommendations: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error generating comprehensive recommendations',
+      code: 'SERVER_ERROR',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};
+
+/**
+ * AI Job Finder - Main Endpoint
+ * GET /api/freelancer/ai-job-finder
+ * 
+ * Smart endpoint that routes to appropriate recommendation method
+ */
+export const aiJobFinder = async (req, res) => {
+  try {
+    const { city, role, skills, experience, salaryRange, employmentType, userId } = req.query;
+    const requestUserId = userId || req.user?.userId;
+
+    logger.info(`🔍 AI Job Finder accessed`);
+
+    // If no filters provided, return available endpoints
+    if (!city && !role) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide city and/or role for job recommendations',
+        availableEndpoints: {
+          byCity: 'POST /api/freelancer/recommendations/by-city',
+          byRole: 'POST /api/freelancer/recommendations/by-role',
+          comprehensive: 'POST /api/freelancer/recommendations/comprehensive',
+        },
+        exampleRequest: {
+          endpoint: '/recommendations/comprehensive',
+          body: {
+            city: 'Bangalore',
+            role: 'Full Stack Developer',
+            userId: 'user_id_optional',
+            experience: 3,
+            salaryRange: '₹60,000-₹120,000',
+            employmentType: 'Full-time',
+          },
+        },
+      });
+    }
+
+    // Route to appropriate handler
+    if (city && role && (experience || salaryRange)) {
+      // Use comprehensive recommendations
+      const body = { city, role, userId: requestUserId, experience, salaryRange, employmentType };
+      return getComprehensiveJobRecommendations({ ...req, body }, res);
+    } else if (city && role) {
+      // Use city-based recommendations
+      const body = { city, role, userId: requestUserId };
+      return getJobRecommendationsByCity({ ...req, body }, res);
+    } else if (role && !city) {
+      // Use role-based recommendations
+      const body = { role, city: null, userId: requestUserId };
+      return getJobRecommendationsByRole({ ...req, body }, res);
+    }
+  } catch (error) {
+    logger.error(`❌ Error in aiJobFinder: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Error in job finder',
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
+    });
+  }
+};

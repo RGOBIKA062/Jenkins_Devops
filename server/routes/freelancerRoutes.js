@@ -89,6 +89,25 @@ router.get('/skill-boost', freelancerController.getSkillBoost);
 
 /**
  * ==========================================
+ * ADVANCED JOB FINDER ROUTES
+ * City & Role-Based Recommendations
+ * ==========================================
+ */
+
+// AI Job Finder - Smart Router (GET with query params)
+router.get('/ai-job-finder', freelancerController.aiJobFinder);
+
+// Get Job Recommendations by City and Role
+router.post('/recommendations/by-city', freelancerController.getJobRecommendationsByCity);
+
+// Get Job Recommendations by Role (with optional city)
+router.post('/recommendations/by-role', freelancerController.getJobRecommendationsByRole);
+
+// Get Comprehensive Job Recommendations (Best Accuracy)
+router.post('/recommendations/comprehensive', freelancerController.getComprehensiveJobRecommendations);
+
+/**
+ * ==========================================
  * STATISTICS & ANALYTICS ROUTES
  * ==========================================
  */

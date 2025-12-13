@@ -93,6 +93,8 @@ const FreelancerPage = () => {
 
   // Skills State
   const [skills, setSkills] = useState([]);
+  // Portfolio State (array of { title, url })
+  const [portfolio, setPortfolio] = useState([]);
   const [newSkill, setNewSkill] = useState({
     name: '',
     proficiency: 'Intermediate',
@@ -139,6 +141,8 @@ const FreelancerPage = () => {
   // AI Recommendations
   const [recommendations, setRecommendations] = useState([]);
   const [loadingAI, setLoadingAI] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('Full Stack Developer');
+  const [selectedCity, setSelectedCity] = useState('Bangalore');
 
   // API Helper
   const API_BASE = 'http://localhost:5000/api/freelancer';
@@ -289,6 +293,7 @@ const FreelancerPage = () => {
           setSkills(res.data.skills || []);
           setCertifications(res.data.certifications || []);
           setProjects(res.data.activeProjects || []);
+          setPortfolio(res.data.portfolio || []);
           
           // Calculate stats
           if (res.data.financials) {
@@ -517,10 +522,16 @@ const FreelancerPage = () => {
     }
   };
 
-  // Fetch AI Recommendations
+  // Fetch AI Recommendations - NEW: City & Role Based
   const handleGetAIRecommendations = async () => {
     if (skills.length === 0) {
       setError('Please add at least one skill to your profile first!');
+      setTimeout(() => setError(null), 5000);
+      return;
+    }
+
+    if (!selectedRole?.trim()) {
+      setError('Please select a job role first!');
       setTimeout(() => setError(null), 5000);
       return;
     }
@@ -529,41 +540,54 @@ const FreelancerPage = () => {
       setLoadingAI(true);
       setError(null);
       
-      // Build proper API URL with userId query parameter
-      const apiUrl = `${API_BASE}/ai-recommendations?userId=${encodeURIComponent(userId)}`;
-      console.log(`[AI-Recommendations] Fetching from: ${apiUrl}`);
-      console.log(`[AI-Recommendations] Skills: ${skills.map(s => s.name).join(', ')}`);
+      // Use selected role and city
+      const city = selectedCity || 'Bangalore';
+      const role = selectedRole || 'Full Stack Developer';
+      const experience = profile.yearsOfExperience || 0;
+      
+      // Use comprehensive recommendations endpoint (BEST ACCURACY)
+      const apiUrl = `${API_BASE}/recommendations/comprehensive`;
+      console.log(`[AI-Job-Finder] Calling: ${apiUrl}`);
+      console.log(`[AI-Job-Finder] Filters: City=${city}, Role=${role}, Experience=${experience}`);
+      console.log(`[AI-Job-Finder] Skills: ${skills.map(s => s.name).join(', ')}`);
 
       const response = await fetch(apiUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
+        body: JSON.stringify({
+          city,
+          role,
+          userId,
+          experience,
+          skillsMatched: skills.length,
+        }),
       });
 
-      console.log(`[AI-Recommendations] Response status: ${response.status}`);
+      console.log(`[AI-Job-Finder] Response status: ${response.status}`);
       
       // Parse response
       let data;
       try {
         data = await response.json();
-        console.log('[AI-Recommendations] Response data:', data);
+        console.log('[AI-Job-Finder] Response data:', data);
       } catch (parseError) {
-        console.error('[AI-Recommendations] Failed to parse response:', parseError);
+        console.error('[AI-Job-Finder] Failed to parse response:', parseError);
         throw new Error('Invalid server response. Server returned non-JSON data.');
       }
 
       if (!response.ok) {
         const errorMsg = data?.message || `HTTP ${response.status}: ${response.statusText}`;
-        console.error('[AI-Recommendations] Error response:', data);
+        console.error('[AI-Job-Finder] Error response:', data);
         throw new Error(errorMsg);
       }
 
       // Handle successful response
       if (data?.success) {
         const recs = data.data?.recommendations || [];
-        console.log(`[AI-Recommendations] Successfully fetched ${recs.length} recommendations`);
+        console.log(`[AI-Job-Finder] Successfully fetched ${recs.length} job recommendations`);
         
         setRecommendations(recs);
         
@@ -571,13 +595,16 @@ const FreelancerPage = () => {
         if (recs.length === 0 && data.data?.message) {
           setSuccess(data.data.message);
           setTimeout(() => setSuccess(null), 5000);
+        } else if (recs.length > 0) {
+          setSuccess(`Found ${recs.length} amazing jobs in ${city} for ${role}!`);
+          setTimeout(() => setSuccess(null), 3000);
         }
       } else {
         throw new Error(data?.message || 'Failed to fetch recommendations');
       }
     } catch (err) {
-      console.error('[AI-Recommendations] Exception caught:', err);
-      const errorMsg = err.message || 'Error fetching recommendations. Please try again.';
+      console.error('[AI-Job-Finder] Exception caught:', err);
+      const errorMsg = err.message || 'Error fetching job recommendations. Please try again.';
       setError(errorMsg);
       setTimeout(() => setError(null), 5000);
     } finally {
@@ -807,6 +834,10 @@ const FreelancerPage = () => {
             <AIHubSection
               recommendations={recommendations}
               loading={loadingAI}
+              selectedRole={selectedRole}
+              selectedCity={selectedCity}
+              onRoleChange={setSelectedRole}
+              onCityChange={setSelectedCity}
               onGetRecommendations={handleGetAIRecommendations}
             />
           </TabsContent>
@@ -1207,6 +1238,7 @@ const CertificatesSection = ({
           <DialogContent className="bg-white border-gray-200 max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-gray-900">Add Certification</DialogTitle>
+              <DialogDescription className="text-gray-800">Provide certification details and an optional image to showcase your credentials.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <Input
@@ -1354,6 +1386,7 @@ const ProjectsSection = ({
           <DialogContent className="bg-white border-gray-200 max-w-2xl">
             <DialogHeader>
               <DialogTitle className="text-gray-900">Create New Project</DialogTitle>
+              <DialogDescription className="text-gray-800">Create a project or gig; set budget, deadline and optional links.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4 mt-4">
               <Input
@@ -1371,8 +1404,11 @@ const ProjectsSection = ({
               <div className="grid grid-cols-2 gap-4">
                 <Input
                   type="number"
-                  value={newProject.budget}
-                  onChange={e => setNewProject({ ...newProject, budget: parseFloat(e.target.value) })}
+                  value={newProject.budget === '' || newProject.budget === null ? '' : newProject.budget}
+                  onChange={e => {
+                    const v = e.target.value;
+                    setNewProject({ ...newProject, budget: v === '' ? '' : Number(v) });
+                  }}
                   className="bg-white border-gray-600 text-gray-900"
                   placeholder="Budget (₹)"
                 />
@@ -1488,65 +1524,202 @@ const ProjectsSection = ({
 const AIHubSection = ({
   recommendations,
   loading,
+  selectedRole,
+  selectedCity,
+  onRoleChange,
+  onCityChange,
   onGetRecommendations,
-}) => (
-  <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
-    <Card className="p-8 bg-white border-gray-200">
-      <div className="flex items-center gap-2 mb-4">
-        <Sparkles className="w-6 h-6 text-yellow-400" />
-        <h2 className="text-2xl font-bold text-gray-900">AI Job Finder</h2>
-      </div>
-      <p className="text-gray-800 mb-6">
-        Get AI-powered job recommendations based on your skills
-      </p>
-      <Button
-        onClick={onGetRecommendations}
-        disabled={loading}
-        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2"
-      >
-        {loading ? (
-          <>
-            <Loader className="w-4 h-4 animate-spin" /> Analyzing...
-          </>
-        ) : (
-          <>
-            <Sparkles className="w-4 h-4" /> Get Recommendations
-          </>
-        )}
-      </Button>
+}) => {
+  const jobRoles = [
+    'Full Stack Developer',
+    'Frontend Developer',
+    'Backend Developer',
+    'React Developer',
+    'Python Developer',
+    'Node.js Developer',
+    'DevOps Engineer',
+    'Data Scientist',
+    'Mobile Developer',
+    'UI/UX Designer',
+  ];
 
-      {recommendations && Array.isArray(recommendations) && recommendations.length > 0 ? (
-        <div className="mt-6 space-y-3 max-h-96 overflow-y-auto">
-          {recommendations.map((rec, idx) => (
-            <motion.div
-              key={idx}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-            >
-              <Card className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border-purple-500/20">
-                <p className="font-semibold text-gray-900">{rec.title || rec.jobTitle || `Opportunity ${idx + 1}`}</p>
-                <p className="text-sm text-gray-900 mt-2">{rec.description || rec.reason || ''}</p>
-                {rec.estimatedPay && (
-                  <p className="text-sm text-green-600 font-semibold mt-2">Est. Pay: {rec.estimatedPay}</p>
-                )}
-                {rec.difficulty && (
-                  <p className="text-xs text-gray-700 mt-2">Difficulty: <span className="font-bold">{rec.difficulty}</span></p>
-                )}
-                {rec.matchPercentage && (
-                  <p className="text-xs text-blue-600 font-semibold mt-2">Match: {rec.matchPercentage}%</p>
-                )}
-              </Card>
-            </motion.div>
-          ))}
+  const cities = [
+    'Bangalore',
+    'Mumbai',
+    'Delhi',
+    'Pune',
+    'Chennai',
+    'Hyderabad',
+    'Kolkata',
+    'Ahmedabad',
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
+      <Card className="p-8 bg-white border-gray-200">
+        <div className="flex items-center gap-2 mb-4">
+          <Sparkles className="w-6 h-6 text-yellow-400" />
+          <h2 className="text-2xl font-bold text-gray-900">AI Job Finder</h2>
         </div>
-      ) : (
-        <div className="mt-6 p-4 bg-gray-50 rounded text-center text-gray-600">
-          Click "Get Recommendations" to discover AI-powered job opportunities
+        <p className="text-gray-800 mb-6">
+          Get AI-powered job recommendations based on your skills, role, and location
+        </p>
+
+        {/* Role and City Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          {/* Job Role Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Job Role</label>
+            <Select value={selectedRole} onValueChange={onRoleChange}>
+              <SelectTrigger className="bg-white border-gray-300">
+                <SelectValue placeholder="Choose a job role..." />
+              </SelectTrigger>
+              <SelectContent>
+                {jobRoles.map(role => (
+                  <SelectItem key={role} value={role}>
+                    {role}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* City Selection */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select City</label>
+            <Select value={selectedCity} onValueChange={onCityChange}>
+              <SelectTrigger className="bg-white border-gray-300">
+                <SelectValue placeholder="Choose a city..." />
+              </SelectTrigger>
+              <SelectContent>
+                {cities.map(city => (
+                  <SelectItem key={city} value={city}>
+                    {city}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
-      )}
-    </Card>
-  </motion.div>
-);
+
+        {/* Get Recommendations Button */}
+        <Button
+          onClick={onGetRecommendations}
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 gap-2 mb-6"
+        >
+          {loading ? (
+            <>
+              <Loader className="w-4 h-4 animate-spin" /> Analyzing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4" /> Get Recommendations
+            </>
+          )}
+        </Button>
+
+        {/* Job Recommendations Display */}
+        {recommendations && Array.isArray(recommendations) && recommendations.length > 0 ? (
+          <div className="space-y-3 max-h-[600px] overflow-y-auto">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">
+              ✨ {recommendations.length} Amazing Jobs Found for {selectedRole}
+            </h3>
+            {recommendations.map((rec, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: idx * 0.05 }}
+              >
+                <Card className="p-5 bg-gradient-to-br from-purple-50 to-pink-50 border-purple-200 hover:shadow-lg transition-shadow">
+                  {/* Company and Title */}
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <p className="font-bold text-lg text-gray-900">{rec.company}</p>
+                      <p className="text-gray-700 font-semibold">{rec.title}</p>
+                    </div>
+                    {rec.matchPercentage && (
+                      <div className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm font-bold">
+                        {rec.matchPercentage}% Match
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-gray-700 text-sm mb-3">{rec.description}</p>
+
+                  {/* Key Details */}
+                  <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+                    <div>
+                      <p className="text-gray-600">💰 Salary</p>
+                      <p className="font-semibold text-green-600">{rec.salary}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">📍 Location</p>
+                      <p className="font-semibold text-gray-900">{rec.location}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">💼 Type</p>
+                      <p className="font-semibold text-gray-900">{rec.jobType}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-600">🌐 Work Mode</p>
+                      <p className="font-semibold text-gray-900">{rec.remoteWork}</p>
+                    </div>
+                  </div>
+
+                  {/* Skills */}
+                  {rec.requiredSkills && rec.requiredSkills.length > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-semibold text-gray-600 mb-1">Required Skills:</p>
+                      <div className="flex flex-wrap gap-1">
+                        {rec.requiredSkills.map((skill, i) => (
+                          <span key={i} className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Match Reason */}
+                  {rec.matchReason && (
+                    <p className="text-xs text-purple-600 italic mb-3">✓ {rec.matchReason}</p>
+                  )}
+
+                  {/* Benefits */}
+                  {rec.benefits && rec.benefits.length > 0 && (
+                    <div className="text-xs text-gray-600 mb-3">
+                      <p className="font-semibold text-gray-700 mb-1">Benefits:</p>
+                      <p>{rec.benefits.slice(0, 3).join(' • ')}</p>
+                    </div>
+                  )}
+
+                  {/* Apply Button */}
+                  {rec.applyUrl && (
+                    <Button
+                      className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      onClick={() => window.open(rec.applyUrl, '_blank')}
+                    >
+                      Apply Now
+                    </Button>
+                  )}
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        ) : (
+          <div className="mt-6 p-6 bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg text-center border border-gray-200">
+            <Sparkles className="w-8 h-8 text-gray-400 mx-auto mb-2" />
+            <p className="text-gray-600 font-medium">Select a role and city, then click "Get Recommendations"</p>
+            <p className="text-gray-500 text-sm">to discover AI-powered job opportunities</p>
+          </div>
+        )}
+      </Card>
+    </motion.div>
+  );
+};
 
 export default FreelancerPage;
 
