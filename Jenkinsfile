@@ -49,8 +49,10 @@
       stage('Serve Frontend') {
     steps {
         dir('client') {
-            bat 'npm install -g serve'
-            bat 'start /B cmd /c serve -s dist -l 3000'
+            bat '''
+            npm install -g serve
+            npx serve -s dist -l 3000
+            '''
         }
     }
 }
