@@ -13,11 +13,7 @@ pipeline {
             }
         }
 
-        stage('Clone Code') {
-            steps {
-                git branch: 'main', url: 'https://github.com/RGOBIKA062/Jenkins_Devops.git'
-            }
-        }
+        // ❌ No need Clone stage (Jenkins already clones automatically)
 
         stage('Install Backend') {
             steps {
@@ -46,7 +42,8 @@ pipeline {
         stage('Run Backend') {
             steps {
                 dir('server') {
-                    bat 'start cmd /c node server.js'
+                    bat 'pm2 delete server || exit 0'
+                    bat 'pm2 start server.js --name server'
                 }
             }
         }
@@ -54,7 +51,8 @@ pipeline {
         stage('Serve Frontend') {
             steps {
                 dir('client') {
-                    bat 'start cmd /c npx serve -s build'
+                    bat 'pm2 delete frontend || exit 0'
+                    bat 'pm2 start "npx serve -s build -l 3000" --name frontend'
                 }
             }
         }
