@@ -48,7 +48,7 @@ pipeline {
             steps {
                 dir('client') {
                     bat 'npx pm2 delete frontend || exit 0'
-                    bat 'npx pm2 start "npx serve -s dist -l 3000" --name frontend'
+                    bat 'npx pm2 start cmd --name frontend -- /c npx serve -s dist -l 3000'
                 }
             }
         }
