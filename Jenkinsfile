@@ -7,13 +7,7 @@ pipeline {
 
     stages {
 
-        stage('Clean Workspace') {
-            steps {
-                deleteDir()
-            }
-        }
-
-        // ❌ No need Clone stage (Jenkins already clones automatically)
+        // ❌ REMOVE deleteDir (VERY IMPORTANT)
 
         stage('Install Backend') {
             steps {
