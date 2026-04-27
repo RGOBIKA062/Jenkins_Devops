@@ -5,6 +5,10 @@ pipeline {
         nodejs 'NodeJS'
     }
 
+    environment {
+        PM2_HOME = 'C:\\pm2'
+    }
+
     stages {
 
         stage('Install Backend') {
@@ -34,7 +38,6 @@ pipeline {
         stage('Run Backend') {
             steps {
                 dir('server') {
-                    bat 'set PM2_HOME=C:\\pm2'
                     bat 'npx pm2 delete server || exit 0'
                     bat 'npx pm2 start index.js --name server'
                 }
@@ -44,14 +47,12 @@ pipeline {
         stage('Serve Frontend') {
             steps {
                 dir('client') {
-                    bat 'set PM2_HOME=C:\\pm2'
                     bat 'npx pm2 delete frontend || exit 0'
-                    bat 'npx pm2 start "npx serve -s build -l 3000" --name frontend'
+                    bat 'npx pm2 start "npx serve -s dist -l 3000" --name frontend'
                 }
             }
         }
-
-    }  // ✅ THIS WAS MISSING
+    }
 
     post {
         success {
