@@ -17,7 +17,7 @@ pipeline {
         stage('Install Backend') {
             steps {
                 dir('server') {
-                    bat 'npm install'
+                    bat 'call npm install'
                 }
             }
         }
@@ -25,7 +25,7 @@ pipeline {
         stage('Install Frontend') {
             steps {
                 dir('client') {
-                    bat 'npm install'
+                    bat 'call npm install'
                 }
             }
         }
@@ -33,7 +33,7 @@ pipeline {
         stage('Build Frontend') {
             steps {
                 dir('client') {
-                    bat 'npm run build'
+                    bat 'call npm run build'
                 }
             }
         }
@@ -41,8 +41,11 @@ pipeline {
         stage('Run Backend') {
             steps {
                 dir('server') {
-                    bat 'npx pm2 delete server || exit 0'
-                    bat 'npx pm2 start index.js --name server'
+                    bat '''
+                    set PM2_HOME=C:\\pm2
+                    npx pm2 delete server || exit 0
+                    npx pm2 start index.js --name server
+                    '''
                 }
             }
         }
@@ -50,9 +53,12 @@ pipeline {
         stage('Serve Frontend') {
             steps {
                 dir('client') {
-                    bat 'npm install -g serve'
-                    bat 'npx pm2 delete frontend || exit 0'
-                    bat 'npx pm2 start "npx serve -s dist -l 3000" --name frontend'
+                    bat '''
+                    set PM2_HOME=C:\\pm2
+                    npm install -g serve
+                    npx pm2 delete frontend || exit 0
+                    npx pm2 start serve --name frontend -- -s build -l 3000
+                    '''
                 }
             }
         }
