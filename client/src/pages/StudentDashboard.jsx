@@ -1068,15 +1068,26 @@ const StudentDashboard = () => {
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-500 to-orange-600 text-white py-8">
         <div className="max-w-7xl mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
-          <p className="text-orange-100">Events, Mentoring & Development Tools</p>
+          <div className="flex justify-between items-start mb-2">
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Student Dashboard</h1>
+              <p className="text-orange-100">Events, Mentoring & Development Tools</p>
+            </div>
+            <Button 
+              onClick={() => navigate('/create-event')} 
+              className="bg-white text-orange-600 hover:bg-orange-50 font-semibold gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Create Event
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 py-8">
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-white border border-slate-200 p-1 mb-6">
+          <TabsList className="grid w-full grid-cols-6 bg-white border border-slate-200 p-1 mb-6">
             <TabsTrigger
               value="all"
               className="data-[state=active]:bg-orange-500 data-[state=active]:text-white"
@@ -1100,6 +1111,12 @@ const StudentDashboard = () => {
               className="data-[state=active]:bg-orange-500 data-[state=active]:text-white"
             >
               📬 My Requests ({mentorRequests.length})
+            </TabsTrigger>
+            <TabsTrigger
+              value="compiler"
+              className="data-[state=active]:bg-orange-500 data-[state=active]:text-white"
+            >
+              💻 Compiler
             </TabsTrigger>
             <TabsTrigger
               value="jobs"

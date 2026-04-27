@@ -457,6 +457,10 @@ const FreelancerPage = () => {
       setError('Project title is required');
       return;
     }
+    if (newProject.budget == null || Number(newProject.budget) <= 0) {
+      setError('Please set a valid project budget (> 0)');
+      return;
+    }
 
     try {
       await apiCall('/projects', 'POST', newProject);
@@ -521,6 +525,18 @@ const FreelancerPage = () => {
       console.error('Error updating project:', err);
     }
   };
+
+  // Recompute earnings and completed count whenever projects change
+  useEffect(() => {
+    if (!projects) return;
+    const completed = projects.filter(p => p.status === 'Completed');
+    const total = completed.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
+    setStats(prev => ({
+      ...prev,
+      totalEarnings: total,
+      completedProjects: completed.length,
+    }));
+  }, [projects]);
 
   // Fetch AI Recommendations - NEW: City & Role Based
   const handleGetAIRecommendations = async () => {

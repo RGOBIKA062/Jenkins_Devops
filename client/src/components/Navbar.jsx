@@ -45,15 +45,9 @@ const Navbar = () => {
               Get Started
             </Link>
 
-            {/* Dashboard & Profile Links - Always visible when logged in */}
+            {/* Profile Link - visible when logged in (Dashboard removed) */}
             {isAuthenticated && (
               <>
-                <Link
-                  to="/dashboard"
-                  className="text-base lg:text-lg font-semibold text-foreground/80 hover:text-primary transition-colors px-3 py-2"
-                >
-                  Dashboard
-                </Link>
                 <Link
                   to="/profile"
                   className="text-base lg:text-lg font-semibold text-foreground/80 hover:text-primary transition-colors px-3 py-2"
