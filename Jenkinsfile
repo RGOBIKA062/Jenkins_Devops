@@ -36,8 +36,8 @@ pipeline {
         stage('Run Backend') {
             steps {
                 dir('server') {
-                    bat 'pm2 delete server || exit 0'
-                    bat 'pm2 start server.js --name server'
+                   bat 'npx pm2 delete server || exit 0'
+                   bat 'npx pm2 start server.js --name server'
                 }
             }
         }
@@ -45,8 +45,8 @@ pipeline {
         stage('Serve Frontend') {
             steps {
                 dir('client') {
-                    bat 'pm2 delete frontend || exit 0'
-                    bat 'pm2 start "npx serve -s build -l 3000" --name frontend'
+                  bat 'npx pm2 delete frontend || exit 0'
+                  bat 'npx pm2 start "npx serve -s build -l 3000" --name frontend'
                 }
             }
         }
