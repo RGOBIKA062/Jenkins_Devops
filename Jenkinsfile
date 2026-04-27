@@ -46,11 +46,11 @@
             }
         }
 
-       stage('Serve Frontend') {
+      stage('Serve Frontend') {
     steps {
         dir('client') {
             bat 'npm install -g serve'
-            bat 'npx pm2 restart frontend || npx pm2 start serve --name frontend -- -s dist -l 3000'
+            bat 'start /B cmd /c serve -s dist -l 3000'
         }
     }
 }
