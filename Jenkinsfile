@@ -1,4 +1,4 @@
- pipeline {
+pipeline {
     agent any
 
     tools {
@@ -41,21 +41,21 @@
         stage('Run Backend') {
             steps {
                 dir('server') {
-                    bat 'npx pm2 restart server || npx pm2 start index.js --name server'
+                    bat 'npx pm2 delete server || exit 0'
+                    bat 'npx pm2 start index.js --name server'
                 }
             }
         }
 
-      stage('Serve Frontend') {
-    steps {
-        dir('client') {
-            bat '''
-            npm install -g serve
-            npx serve -s dist -l 3000
-            '''
+        stage('Serve Frontend') {
+            steps {
+                dir('client') {
+                    bat 'npm install -g serve'
+                    bat 'npx pm2 delete frontend || exit 0'
+                    bat 'npx pm2 start "npx serve -s dist -l 3000" --name frontend'
+                }
+            }
         }
-    }
-}
     }
 
     post {
