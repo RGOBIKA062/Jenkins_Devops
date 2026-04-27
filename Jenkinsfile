@@ -7,6 +7,9 @@ pipeline {
 
     environment {
         PM2_HOME = 'C:\\pm2'
+        GROQ_API_KEY = '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'
+        JWT_SECRET = 'mySuperSecret123456'
+        PORT = '5000'
     }
 
     stages {
