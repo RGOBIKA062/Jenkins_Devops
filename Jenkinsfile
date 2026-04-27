@@ -31,24 +31,25 @@ pipeline {
             }
         }
 
-        stage('Run Backend') {
-            steps {
-                dir('server') {
-                    bat 'npx pm2 delete server || exit 0'
-                    bat 'npx pm2 start index.js --name server'
-                }
-            }
-        }
-
-        stage('Serve Frontend') {
-            steps {
-                dir('client') {
-                    bat 'npx pm2 delete frontend || exit 0'
-                    bat 'npx pm2 start "npx serve -s build -l 3000" --name frontend'
-                }
-            }
+       stage('Run Backend') {
+    steps {
+        dir('server') {
+            bat 'set PM2_HOME=C:\\pm2'
+            bat 'npx pm2 delete server || exit 0'
+            bat 'npx pm2 start index.js --name server'
         }
     }
+}
+
+       stage('Serve Frontend') {
+    steps {
+        dir('client') {
+            bat 'set PM2_HOME=C:\\pm2'
+            bat 'npx pm2 delete frontend || exit 0'
+            bat 'npx pm2 start "npx serve -s build -l 3000" --name frontend'
+        }
+    }
+}
 
     post {
         success {
