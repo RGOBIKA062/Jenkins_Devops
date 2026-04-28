@@ -51,17 +51,17 @@ pipeline {
         }
 
         stage('Serve Frontend') {
-            steps {
-                dir('client') {
-                    bat '''
-                    set PM2_HOME=C:\\pm2
-                    npm install -g serve
-                    npx pm2 delete frontend || exit 0
-                    npx pm2 start serve --name frontend -- -s build -l 3000
-                    '''
-                }
-            }
+        steps {
+        dir('client') {
+            bat '''
+            set PM2_HOME=C:\\pm2
+            npm install -g serve
+            npx pm2 delete frontend || exit 0
+            npx pm2 start serve --name frontend -- -s dist -l 3000
+            '''
         }
+    }
+}
     }
 
     post {
