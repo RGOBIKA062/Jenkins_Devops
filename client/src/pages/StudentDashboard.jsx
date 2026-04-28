@@ -638,7 +638,7 @@ const StudentDashboard = () => {
             <p className="text-slate-600 mb-4 text-lg font-medium">No events created yet</p>
             <Button onClick={() => navigate('/create-event')} className="gap-2 bg-orange-500 hover:bg-orange-600">
               <Plus className="w-4 h-4" />
-              Create Event
+              Create Events
             </Button>
           </Card>
         </motion.div>
