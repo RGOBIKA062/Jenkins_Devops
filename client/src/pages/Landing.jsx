@@ -49,7 +49,7 @@ const Landing = () => {
           {/* Right: heading at top, then 2x2 grid */}
           <div className="order-2 lg:order-2">
             <motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl text-orange-500 mb-6 leading-tight">Tell Us Who You Are</h1>
+              <h1 className="font-display font-bold text-5xl sm:text-6xl lg:text-7xl text-orange-500 mb-6 leading-tight">Tell Us Who You Are?</h1>
               <p className="text-xl sm:text-2xl text-muted-foreground mb-8">To personalize your experience!</p>
             </motion.div>
 
