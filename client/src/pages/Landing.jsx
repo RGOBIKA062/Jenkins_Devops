@@ -3,19 +3,15 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
-// Use a runtime path for the hero image so the dev server doesn't fail before you add the file.
-const heroStudent = "/src/assets/hero-student.png";
+import heroImage from "../assets/role-hero.png";
+import studentIcon from "../assets/student.png";
+import facultyIcon from "../assets/faculty.png";
+import industryIcon from "../assets/industry.png";
+import freelancerIcon from "../assets/freelancer.png";
 
 const Landing = () => {
   const navigate = useNavigate();
   const [selected, setSelected] = useState(null);
-
-  // Use runtime asset paths for role images so the page loads before you add files.
-  const heroImage = "/src/assets/role-hero.png";
-  const studentIcon = "/src/assets/student.png";
-  const facultyIcon = "/src/assets/faculty.png";
-  const industryIcon = "/src/assets/industry.png";
-  const freelancerIcon = "/src/assets/freelancer.png";
 
   const roles = [
     { id: "student", label: "Student", icon: studentIcon, path: "/student" },
